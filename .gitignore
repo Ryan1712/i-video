@@ -6,3 +6,5 @@ videos/*/output/
 videos/*/manifest.json
 __pycache__/
 *.pyc
+.worktrees/
+.superpowers/
