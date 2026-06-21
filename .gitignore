@@ -1,0 +1,8 @@
+.env
+client_secret.json
+videos/*/.yt_token.json
+videos/*/audio/
+videos/*/output/
+videos/*/manifest.json
+__pycache__/
+*.pyc
