@@ -1,17 +1,13 @@
-import sys
-from pathlib import Path
-
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from saas.db import Base
+
 
 @pytest.fixture
 def db_session_factory():
-    # Import here to ensure sys.path is set up by root conftest
-    from saas.db import Base
-
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
