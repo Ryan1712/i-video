@@ -1,0 +1,63 @@
+"""Pydantic request/response models for the SaaS API."""
+from __future__ import annotations
+
+from pydantic import BaseModel
+
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class SceneIn(BaseModel):
+    narration_text: str
+
+
+class SceneOut(BaseModel):
+    id: int
+    order_index: int
+    narration_text: str
+    asset_path: str | None
+
+    class Config:
+        from_attributes = True
+
+
+class EpisodeIn(BaseModel):
+    title: str
+    description: str = ""
+    tags: str = ""
+    scenes: list[SceneIn] = []
+
+
+class EpisodeOut(BaseModel):
+    id: int
+    title: str
+    description: str
+    tags: str
+    status: str
+    output_path: str | None
+    scenes: list[SceneOut]
+
+    class Config:
+        from_attributes = True
+
+
+class JobOut(BaseModel):
+    id: int
+    status: str
+    progress_pct: int
+    error_message: str | None
+
+    class Config:
+        from_attributes = True
