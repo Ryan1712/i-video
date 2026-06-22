@@ -11,6 +11,8 @@ from ..billing.service import (
     activate_subscription,
     apply_voucher_discount,
     downgrade_to_free,
+    extract_order_code,
+    get_bank_webhook_secret,
     mark_past_due,
     renew_subscription,
     validate_voucher,
@@ -18,8 +20,14 @@ from ..billing.service import (
 from ..billing.stripe_client import construct_webhook_event, create_checkout_session
 from ..db import get_db
 from ..deps import get_current_user
-from ..models import Order, Plan, Subscription, User
-from ..schemas import BankTransferRequest, BankTransferResponse, CheckoutRequest, CheckoutResponse
+from ..models import BankTransaction, Order, Plan, Subscription, User
+from ..schemas import (
+    BankTransferRequest,
+    BankTransferResponse,
+    BankWebhookPayload,
+    CheckoutRequest,
+    CheckoutResponse,
+)
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -134,5 +142,42 @@ async def stripe_webhook(
         free_plan = db.query(Plan).filter_by(price_cents=0).first()
         if free_plan is not None:
             downgrade_to_free(db, sub, free_plan)
+
+    return {"received": True}
+
+
+@router.post("/webhooks/bank")
+def bank_webhook(
+    payload: BankWebhookPayload,
+    x_webhook_secret: str = Header(...),
+    db: Session = Depends(get_db),
+) -> dict:
+    if x_webhook_secret != get_bank_webhook_secret():
+        raise HTTPException(status_code=401, detail="Invalid webhook secret")
+
+    existing = db.query(BankTransaction).filter_by(gateway_transaction_id=payload.gateway_transaction_id).one_or_none()
+    if existing is not None:
+        return {"received": True, "duplicate": True}
+
+    order_code = extract_order_code(payload.content)
+    matched_order = None
+    if order_code is not None:
+        candidate = db.query(Order).filter_by(unique_code=order_code, status="pending").one_or_none()
+        if candidate is not None and candidate.amount_cents == payload.amount_cents:
+            matched_order = candidate
+
+    txn = BankTransaction(
+        gateway_transaction_id=payload.gateway_transaction_id,
+        amount_cents=payload.amount_cents,
+        content=payload.content,
+        received_at=payload.received_at,
+        status="matched" if matched_order else "unmatched",
+        matched_order_id=matched_order.id if matched_order else None,
+    )
+    db.add(txn)
+    db.commit()
+
+    if matched_order is not None:
+        activate_subscription(db, matched_order)
 
     return {"received": True}

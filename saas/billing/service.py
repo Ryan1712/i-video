@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import datetime
+import os
+import re
 
 from sqlalchemy.orm import Session
 
@@ -12,6 +14,18 @@ class VoucherError(Exception):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
+
+
+def get_bank_webhook_secret() -> str:
+    secret = os.environ.get("BANK_WEBHOOK_SECRET")
+    if not secret:
+        raise RuntimeError("BANK_WEBHOOK_SECRET environment variable is not set")
+    return secret
+
+
+def extract_order_code(content: str) -> str | None:
+    match = re.search(r"OID-[A-Z0-9-]+", content)
+    return match.group(0) if match else None
 
 
 def activate_subscription(db: Session, order: Order) -> Subscription:

@@ -86,6 +86,13 @@ class BankTransferResponse(BaseModel):
     bank_account_qr_payload: str
 
 
+class BankWebhookPayload(BaseModel):
+    gateway_transaction_id: str
+    amount_cents: int
+    content: str
+    received_at: datetime.datetime
+
+
 class SubscriptionOut(BaseModel):
     plan_id: int
     status: str
