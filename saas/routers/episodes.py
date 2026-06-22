@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from ..billing.limits import PlanLimitError, check_episode_limit
 from ..db import get_db
 from ..deps import get_current_user
 from ..models import Episode, Job, Scene, User
@@ -20,6 +21,11 @@ def create_episode(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Episode:
+    try:
+        check_episode_limit(db, current_user)
+    except PlanLimitError as e:
+        raise HTTPException(status_code=403, detail=e.code)
+
     episode = Episode(
         user_id=current_user.id,
         title=payload.title,
