@@ -27,6 +27,7 @@ from ..schemas import (
     BankWebhookPayload,
     CheckoutRequest,
     CheckoutResponse,
+    SubscriptionOut,
 )
 
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -181,3 +182,13 @@ def bank_webhook(
         activate_subscription(db, matched_order)
 
     return {"received": True}
+
+
+@router.get("/subscription", response_model=SubscriptionOut)
+def get_subscription(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+) -> Subscription:
+    subscription = db.query(Subscription).filter_by(user_id=current_user.id).one_or_none()
+    if subscription is None:
+        raise HTTPException(status_code=404, detail="No subscription")
+    return subscription

@@ -7,11 +7,17 @@ import re
 
 from sqlalchemy.orm import Session
 
-from ..models import Order, Plan, Subscription, Voucher
+from ..models import Order, Plan, Subscription, User, Voucher
 
 
 class VoucherError(Exception):
     def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
+
+
+class TrialError(Exception):
+    def __init__(self, code: str = "ERR_TRIAL_ALREADY_USED"):
         super().__init__(code)
         self.code = code
 
@@ -84,6 +90,20 @@ def apply_voucher_discount(amount_cents: int, voucher: Voucher) -> int:
     else:
         discount = voucher.discount_value
     return max(0, amount_cents - discount)
+
+
+def start_trial(db: Session, user: User, plan: Plan) -> Subscription:
+    if user.has_used_trial:
+        raise TrialError()
+
+    subscription = Subscription(
+        user_id=user.id, plan_id=plan.id, status="trialing",
+        current_period_end=datetime.datetime.utcnow() + datetime.timedelta(days=plan.trial_days),
+    )
+    user.has_used_trial = True
+    db.add(subscription)
+    db.commit()
+    return subscription
 
 
 def expire_stale_orders(db: Session, max_age_minutes: int = 30) -> int:
