@@ -17,6 +17,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
     has_used_trial: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_suspended: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
 
@@ -128,4 +129,19 @@ class BankTransaction(Base):
     received_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
     matched_order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="unmatched")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    actor_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    actor_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
+    target_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    target_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    before_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    after_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
