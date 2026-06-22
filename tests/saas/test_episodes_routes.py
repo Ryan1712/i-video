@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -100,3 +102,39 @@ def test_upload_scene_asset_sets_asset_path(client, tmp_path, monkeypatch):
 
     refetched = client.get(f"/episodes/{created['id']}", headers=headers).json()
     assert refetched["scenes"][0]["asset_path"] == response.json()["asset_path"]
+
+
+def test_trigger_build_rejects_episode_with_missing_assets(client):
+    headers = _signup_and_auth_headers(client, email="builder1@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": [{"narration_text": "Scene one"}]},
+        headers=headers,
+    ).json()
+
+    response = client.post(f"/episodes/{created['id']}/build", headers=headers)
+
+    assert response.status_code == 400
+
+
+def test_trigger_build_enqueues_job_when_all_assets_present(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path))
+    headers = _signup_and_auth_headers(client, email="builder2@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": [{"narration_text": "Scene one"}]},
+        headers=headers,
+    ).json()
+    scene_id = created["scenes"][0]["id"]
+    client.post(
+        f"/episodes/{created['id']}/scenes/{scene_id}/asset",
+        files={"file": ("hero.png", b"fake-bytes", "image/png")},
+        headers=headers,
+    )
+
+    with patch("saas.routers.episodes.build_episode_task") as task_mock:
+        response = client.post(f"/episodes/{created['id']}/build", headers=headers)
+
+    assert response.status_code == 202
+    assert response.json()["status"] == "queued"
+    task_mock.delay.assert_called_once()

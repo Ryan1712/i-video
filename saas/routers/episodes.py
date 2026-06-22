@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import get_current_user
-from ..models import Episode, Scene, User
-from ..schemas import EpisodeIn, EpisodeOut, SceneOut
+from ..models import Episode, Job, Scene, User
+from ..schemas import EpisodeIn, EpisodeOut, JobOut, SceneOut
 from ..storage import save_asset
+from ..tasks import build_episode_task
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
@@ -75,3 +76,21 @@ async def upload_scene_asset(
     scene.asset_path = relative_path
     db.commit()
     return scene
+
+
+@router.post("/{episode_id}/build", response_model=JobOut, status_code=202)
+def trigger_build(
+    episode_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Job:
+    episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    if any(scene.asset_path is None for scene in episode.scenes):
+        raise HTTPException(status_code=400, detail="All scenes must have an uploaded asset before building")
+
+    job = Job(episode_id=episode.id, type="build", status="queued")
+    db.add(job)
+    db.commit()
+
+    build_episode_task.delay(job.id)
+    return job
