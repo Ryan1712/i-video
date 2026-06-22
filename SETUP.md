@@ -37,3 +37,10 @@ python -m agent_video upload videos/ep01_what-if-the-moon-disappeared
 4. Start the API: `py -m uvicorn saas.main:app --reload`
 5. Start a Celery worker (separate terminal): `py -m celery -A saas.celery_app.celery_app worker --loglevel=info --pool=solo`
 6. Open http://127.0.0.1:8000/docs for interactive API docs (signup, create an episode, upload assets per scene, trigger a build, poll `/jobs/{id}`).
+
+## 6. Billing (Stripe + VN bank transfer)
+
+1. Create a [Stripe](https://dashboard.stripe.com/test/apikeys) test-mode account, copy the **Secret key** into `STRIPE_SECRET_KEY`.
+2. Create a webhook endpoint (Stripe CLI for local dev: `stripe listen --forward-to localhost:8000/billing/webhooks/stripe`), copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
+3. Set `BANK_WEBHOOK_SECRET` to a long random string; configure your bank-transfer gateway (SePay/Casso) to send that value in the `x-webhook-secret` header when calling `POST /billing/webhooks/bank`.
+4. Plans (`plans` table) are currently seeded manually via SQL/DB shell — the admin "create plan" UI that auto-syncs Stripe Products/Prices is a separate, not-yet-built plan.
