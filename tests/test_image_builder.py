@@ -22,7 +22,8 @@ def test_build_scene_clip_invokes_ffmpeg_with_configured_dimensions(tmp_path):
     }
 
     fake_result = MagicMock(returncode=0, stderr="")
-    with patch("agent_video.image_builder.subprocess.run", return_value=fake_result) as run_mock:
+    with patch("agent_video.image_builder.subprocess.run", return_value=fake_result) as run_mock, \
+         patch("agent_video.image_builder.get_ffmpeg_exe", return_value="ffmpeg"):
         build_scene_clip(asset_path, duration=2.0, out_path=out_path, tmp_dir=tmp_dir, config=config)
 
     assert run_mock.called
@@ -42,7 +43,8 @@ def test_build_scene_clip_raises_on_ffmpeg_failure(tmp_path):
     tmp_dir = str(tmp_path / "tmp")
 
     fake_result = MagicMock(returncode=1, stderr="ffmpeg exploded")
-    with patch("agent_video.image_builder.subprocess.run", return_value=fake_result):
+    with patch("agent_video.image_builder.subprocess.run", return_value=fake_result), \
+         patch("agent_video.image_builder.get_ffmpeg_exe", return_value="ffmpeg"):
         try:
             build_scene_clip(asset_path, duration=2.0, out_path=out_path, tmp_dir=tmp_dir, config=DEFAULT_CONFIG)
             assert False, "expected RuntimeError"
