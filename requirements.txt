@@ -12,6 +12,7 @@ sqlalchemy>=2.0.30
 psycopg2-binary>=2.9.9
 PyJWT>=2.8.0
 passlib[bcrypt]>=1.7.4
+bcrypt==3.2.2
 celery>=5.4.0
 redis>=5.0.0
 python-multipart>=0.0.9
