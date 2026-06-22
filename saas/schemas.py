@@ -161,6 +161,18 @@ class VoucherOut(BaseModel):
         from_attributes = True
 
 
+class SiteSettingIn(BaseModel):
+    value: str
+
+
+class SiteSettingOut(BaseModel):
+    key: str
+    value: str
+
+    class Config:
+        from_attributes = True
+
+
 class UserOut(BaseModel):
     id: int
     email: str

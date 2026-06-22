@@ -21,6 +21,13 @@ class User(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+class SiteSetting(Base):
+    __tablename__ = "site_settings"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+
+
 class Episode(Base):
     __tablename__ = "episodes"
 
