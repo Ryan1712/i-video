@@ -41,3 +41,24 @@ def test_get_current_user_rejects_unknown_user_id(db_session, monkeypatch):
     with pytest.raises(HTTPException) as exc_info:
         get_current_user(authorization=f"Bearer {token}", db=db_session)
     assert exc_info.value.status_code == 401
+
+
+def test_get_current_user_rejects_suspended_user(db_session_factory, db_session, monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret")
+    from saas.models import User
+    from saas.security import create_access_token
+
+    user = User(email="suspended@x.com", password_hash="h", is_suspended=True)
+    db_session.add(user)
+    db_session.commit()
+    token = create_access_token(user.id, "test-secret-test-secret")
+
+    from fastapi import HTTPException
+
+    from saas.deps import get_current_user
+
+    try:
+        get_current_user(authorization=f"Bearer {token}", db=db_session)
+        assert False, "expected HTTPException"
+    except HTTPException as e:
+        assert e.status_code == 403

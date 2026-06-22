@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from ..audit import log_action
 from ..db import get_db
 from ..models import User
 from ..schemas import LoginRequest, SignupRequest, TokenResponse
@@ -33,4 +34,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token(user.id, secret=get_jwt_secret())
+
+    if user.role == "admin":
+        log_action(db, actor=user, action="admin.login", target_type="user", target_id=user.id)
+
     return TokenResponse(access_token=token)
