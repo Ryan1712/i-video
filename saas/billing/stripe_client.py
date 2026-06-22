@@ -46,3 +46,16 @@ def create_checkout_session(
 def construct_webhook_event(payload: bytes, sig_header: str) -> stripe.Event:
     secret = get_stripe_webhook_secret()
     return stripe.Webhook.construct_event(payload, sig_header, secret)
+
+
+def create_product(name: str) -> stripe.Product:
+    stripe.api_key = get_stripe_secret_key()
+    return stripe.Product.create(name=name)
+
+
+def create_price(product_id: str, price_cents: int, currency: str, billing_interval: str) -> stripe.Price:
+    stripe.api_key = get_stripe_secret_key()
+    return stripe.Price.create(
+        product=product_id, unit_amount=price_cents, currency=currency.lower(),
+        recurring={"interval": billing_interval},
+    )

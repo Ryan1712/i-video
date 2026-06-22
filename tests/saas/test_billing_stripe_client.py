@@ -5,6 +5,8 @@ import pytest
 from saas.billing.stripe_client import (
     construct_webhook_event,
     create_checkout_session,
+    create_price,
+    create_product,
     get_stripe_secret_key,
     get_stripe_webhook_secret,
 )
@@ -49,3 +51,28 @@ def test_construct_webhook_event_calls_stripe_sdk(mock_construct, monkeypatch):
 
     assert event["type"] == "checkout.session.completed"
     mock_construct.assert_called_once_with(b"payload", "sig_header_value", "whsec_123")
+
+
+@patch("saas.billing.stripe_client.stripe.Product.create")
+def test_create_product_calls_stripe_sdk(mock_create, monkeypatch):
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_123")
+    mock_create.return_value = MagicMock(id="prod_123")
+
+    product = create_product("Pro Plan")
+
+    assert product.id == "prod_123"
+    mock_create.assert_called_once_with(name="Pro Plan")
+
+
+@patch("saas.billing.stripe_client.stripe.Price.create")
+def test_create_price_calls_stripe_sdk(mock_create, monkeypatch):
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_123")
+    mock_create.return_value = MagicMock(id="price_123")
+
+    price = create_price("prod_123", 199000, "vnd", "month")
+
+    assert price.id == "price_123"
+    mock_create.assert_called_once_with(
+        product="prod_123", unit_amount=199000, currency="vnd",
+        recurring={"interval": "month"},
+    )
