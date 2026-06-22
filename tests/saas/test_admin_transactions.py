@@ -73,3 +73,61 @@ def test_manually_link_transaction_activates_subscription_and_audits(db_session_
     entry = db_session.query(AuditLog).filter_by(action="transaction.manual_link").one()
     assert entry.target_id == txn.id
     app.dependency_overrides.clear()
+
+
+def test_link_already_matched_transaction_returns_409(db_session_factory, db_session, monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret")
+    app.dependency_overrides[get_db] = lambda: db_session
+    admin, token = _admin_token(db_session)
+    user = User(email="payer2@x.com", password_hash="h")
+    plan = Plan(name="Pro", price_cents=99000, currency="VND", billing_interval="month", trial_days=0, limits={})
+    db_session.add_all([user, plan])
+    db_session.commit()
+    order = Order(
+        user_id=user.id, plan_id=plan.id, amount_cents=99000, currency="VND",
+        payment_method="bank_transfer", status="pending", unique_code="OID-MATCHED",
+    )
+    txn = BankTransaction(
+        gateway_transaction_id="GW-MATCHED", amount_cents=99000, content="already matched",
+        received_at=datetime.datetime.utcnow(), status="matched",
+    )
+    db_session.add_all([order, txn])
+    db_session.commit()
+    client = TestClient(app)
+
+    response = client.post(
+        f"/admin/transactions/{txn.id}/link/{order.id}", headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Transaction already matched"
+    app.dependency_overrides.clear()
+
+
+def test_link_transaction_to_non_pending_order_returns_409(db_session_factory, db_session, monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret")
+    app.dependency_overrides[get_db] = lambda: db_session
+    admin, token = _admin_token(db_session)
+    user = User(email="payer3@x.com", password_hash="h")
+    plan = Plan(name="Pro", price_cents=99000, currency="VND", billing_interval="month", trial_days=0, limits={})
+    db_session.add_all([user, plan])
+    db_session.commit()
+    order = Order(
+        user_id=user.id, plan_id=plan.id, amount_cents=99000, currency="VND",
+        payment_method="bank_transfer", status="paid", unique_code="OID-PAID",
+    )
+    txn = BankTransaction(
+        gateway_transaction_id="GW-UNMATCHED", amount_cents=99000, content="unmatched still",
+        received_at=datetime.datetime.utcnow(), status="unmatched",
+    )
+    db_session.add_all([order, txn])
+    db_session.commit()
+    client = TestClient(app)
+
+    response = client.post(
+        f"/admin/transactions/{txn.id}/link/{order.id}", headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Order is not pending"
+    app.dependency_overrides.clear()

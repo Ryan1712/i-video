@@ -29,6 +29,10 @@ def link_transaction(
     order = db.query(Order).filter_by(id=order_id).one_or_none()
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
+    if txn.status != "unmatched":
+        raise HTTPException(status_code=409, detail="Transaction already matched")
+    if order.status != "pending":
+        raise HTTPException(status_code=409, detail="Order is not pending")
 
     txn.status = "matched"
     txn.matched_order_id = order.id
