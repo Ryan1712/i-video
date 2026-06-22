@@ -123,3 +123,26 @@ class PlanOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class VoucherIn(BaseModel):
+    code: str
+    discount_type: str
+    discount_value: int
+    max_uses: int = 1
+    expires_at: datetime.datetime | None = None
+    applicable_plan_ids: list[int] = []
+
+
+class VoucherOut(BaseModel):
+    id: int
+    code: str
+    discount_type: str
+    discount_value: int
+    max_uses: int
+    used_count: int
+    expires_at: datetime.datetime | None
+    applicable_plan_ids: list[int]
+
+    class Config:
+        from_attributes = True
