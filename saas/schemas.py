@@ -1,6 +1,8 @@
 """Pydantic request/response models for the SaaS API."""
 from __future__ import annotations
 
+import datetime
+
 from pydantic import BaseModel
 
 
@@ -58,6 +60,36 @@ class JobOut(BaseModel):
     status: str
     progress_pct: int
     error_message: str | None
+
+    class Config:
+        from_attributes = True
+
+
+class CheckoutRequest(BaseModel):
+    plan_id: int
+    voucher_code: str | None = None
+
+
+class CheckoutResponse(BaseModel):
+    checkout_url: str
+
+
+class BankTransferRequest(BaseModel):
+    plan_id: int
+    voucher_code: str | None = None
+
+
+class BankTransferResponse(BaseModel):
+    order_id: int
+    unique_code: str
+    amount_cents: int
+    bank_account_qr_payload: str
+
+
+class SubscriptionOut(BaseModel):
+    plan_id: int
+    status: str
+    current_period_end: datetime.datetime | None
 
     class Config:
         from_attributes = True
