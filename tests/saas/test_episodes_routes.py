@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from saas.db import get_db
 from saas.main import app
+from saas.models import Plan, Subscription, User
 
 
 @pytest.fixture
@@ -115,6 +116,36 @@ def test_trigger_build_rejects_episode_with_missing_assets(client):
     response = client.post(f"/episodes/{created['id']}/build", headers=headers)
 
     assert response.status_code == 400
+
+
+def test_trigger_build_rejects_when_at_plan_limit(client, db_session_factory):
+    headers = _signup_and_auth_headers(client, email="builder3@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": []},
+        headers=headers,
+    ).json()
+
+    session = db_session_factory()
+    user = session.query(User).filter_by(email="builder3@example.com").one()
+    plan = Plan(
+        name="Starter",
+        price_cents=1,
+        currency="VND",
+        billing_interval="month",
+        trial_days=0,
+        limits={"episodes_per_month": 1},
+    )
+    session.add(plan)
+    session.commit()
+    session.add(Subscription(user_id=user.id, plan_id=plan.id, status="active"))
+    session.commit()
+    session.close()
+
+    response = client.post(f"/episodes/{created['id']}/build", headers=headers)
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ERR_PLAN_LIMIT_REACHED"
 
 
 def test_trigger_build_enqueues_job_when_all_assets_present(client, tmp_path, monkeypatch):

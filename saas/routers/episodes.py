@@ -90,6 +90,11 @@ def trigger_build(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Job:
+    try:
+        check_episode_limit(db, current_user)
+    except PlanLimitError as e:
+        raise HTTPException(status_code=403, detail=e.code)
+
     episode = _get_owned_episode_or_404(episode_id, db, current_user)
     if any(scene.asset_path is None for scene in episode.scenes):
         raise HTTPException(status_code=400, detail="All scenes must have an uploaded asset before building")
