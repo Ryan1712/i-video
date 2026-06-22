@@ -37,13 +37,14 @@ def extract_order_code(content: str) -> str | None:
 def activate_subscription(db: Session, order: Order) -> Subscription:
     subscription = (
         db.query(Subscription)
-        .filter_by(user_id=order.user_id, plan_id=order.plan_id)
+        .filter_by(user_id=order.user_id)
         .one_or_none()
     )
     if subscription is None:
         subscription = Subscription(user_id=order.user_id, plan_id=order.plan_id)
         db.add(subscription)
 
+    subscription.plan_id = order.plan_id
     subscription.status = "active"
     order.status = "paid"
     order.paid_at = datetime.datetime.utcnow()

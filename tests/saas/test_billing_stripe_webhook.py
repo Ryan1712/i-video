@@ -116,6 +116,78 @@ def test_customer_subscription_deleted_downgrades_to_free(mock_construct, db_ses
 
 
 @patch("saas.routers.billing.construct_webhook_event")
+def test_invoice_payment_failed_unknown_subscription_acks_without_error(mock_construct, db_session_factory, db_session):
+    _setup(db_session)
+
+    mock_construct.return_value = {
+        "type": "invoice.payment_failed",
+        "data": {"object": {"subscription": "sub_does_not_exist"}},
+    }
+    client = TestClient(app)
+
+    response = client.post(
+        "/billing/webhooks/stripe", content=b"{}", headers={"stripe-signature": "sig"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"received": True}
+    app.dependency_overrides.clear()
+
+
+@patch("saas.routers.billing.construct_webhook_event")
+def test_invoice_payment_succeeded_unknown_subscription_acks_without_error(mock_construct, db_session_factory, db_session):
+    _setup(db_session)
+
+    mock_construct.return_value = {
+        "type": "invoice.payment_succeeded",
+        "data": {"object": {"subscription": "sub_does_not_exist"}},
+    }
+    client = TestClient(app)
+
+    response = client.post(
+        "/billing/webhooks/stripe", content=b"{}", headers={"stripe-signature": "sig"},
+    )
+
+    assert response.status_code == 200
+    app.dependency_overrides.clear()
+
+
+@patch("saas.routers.billing.construct_webhook_event")
+def test_customer_subscription_deleted_unknown_subscription_acks_without_error(mock_construct, db_session_factory, db_session):
+    _setup(db_session)
+
+    mock_construct.return_value = {
+        "type": "customer.subscription.deleted",
+        "data": {"object": {"id": "sub_does_not_exist"}},
+    }
+    client = TestClient(app)
+
+    response = client.post(
+        "/billing/webhooks/stripe", content=b"{}", headers={"stripe-signature": "sig"},
+    )
+
+    assert response.status_code == 200
+    app.dependency_overrides.clear()
+
+
+@patch("saas.routers.billing.construct_webhook_event")
+def test_checkout_completed_missing_order_acks_without_error(mock_construct, db_session_factory, db_session):
+    app.dependency_overrides[get_db] = lambda: db_session
+    mock_construct.return_value = {
+        "type": "checkout.session.completed",
+        "data": {"object": {"metadata": {"order_id": "999999"}}},
+    }
+    client = TestClient(app)
+
+    response = client.post(
+        "/billing/webhooks/stripe", content=b"{}", headers={"stripe-signature": "sig"},
+    )
+
+    assert response.status_code == 200
+    app.dependency_overrides.clear()
+
+
+@patch("saas.routers.billing.construct_webhook_event")
 def test_invalid_signature_rejected(mock_construct, db_session_factory, db_session):
     app.dependency_overrides[get_db] = lambda: db_session
     mock_construct.side_effect = ValueError("Invalid signature")

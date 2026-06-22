@@ -41,6 +41,24 @@ def test_checkout_creates_session_and_returns_url(mock_create_session, db_sessio
     app.dependency_overrides.clear()
 
 
+def test_checkout_rejects_plan_without_stripe_price_id(db_session_factory, db_session, monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret")
+    plan = Plan(name="Free", price_cents=0, currency="VND", billing_interval="month", stripe_price_id=None, trial_days=0, limits={})
+    db_session.add(plan)
+    db_session.commit()
+
+    client, token, user = _client_and_token(db_session_factory, db_session)
+
+    response = client.post(
+        "/billing/checkout",
+        json={"plan_id": plan.id},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 400
+    app.dependency_overrides.clear()
+
+
 def test_checkout_requires_auth(db_session_factory, db_session):
     app.dependency_overrides[get_db] = lambda: db_session
     client = TestClient(app)

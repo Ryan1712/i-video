@@ -60,6 +60,36 @@ def test_activate_subscription_reuses_existing_subscription_row(db_session):
     assert db_session.query(Subscription).count() == 1
 
 
+def test_activate_subscription_after_downgrade_keeps_single_row(db_session):
+    user, plan = _make_user_and_plan(db_session)
+    order = Order(
+        user_id=user.id, plan_id=plan.id, amount_cents=199000, currency="VND",
+        payment_method="card", status="pending", unique_code="OID-3",
+    )
+    db_session.add(order)
+    db_session.commit()
+
+    sub = activate_subscription(db_session, order)
+
+    free_plan = Plan(name="Free", price_cents=0, currency="VND", billing_interval="month", trial_days=0, limits={})
+    db_session.add(free_plan)
+    db_session.commit()
+    downgrade_to_free(db_session, sub, free_plan)
+
+    order2 = Order(
+        user_id=user.id, plan_id=plan.id, amount_cents=199000, currency="VND",
+        payment_method="card", status="pending", unique_code="OID-4",
+    )
+    db_session.add(order2)
+    db_session.commit()
+
+    sub2 = activate_subscription(db_session, order2)
+
+    assert db_session.query(Subscription).filter_by(user_id=user.id).count() == 1
+    assert sub2.plan_id == plan.id
+    assert sub2.status == "active"
+
+
 def test_renew_subscription_updates_period_end(db_session):
     user, plan = _make_user_and_plan(db_session)
     sub = Subscription(user_id=user.id, plan_id=plan.id, status="active")

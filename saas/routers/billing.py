@@ -51,6 +51,8 @@ def checkout(
     plan = db.query(Plan).filter_by(id=payload.plan_id).one_or_none()
     if plan is None:
         raise HTTPException(status_code=404, detail="Plan not found")
+    if plan.stripe_price_id is None:
+        raise HTTPException(status_code=400, detail="Plan not purchasable")
 
     amount_cents = plan.price_cents
     promotion_code = None
@@ -130,19 +132,23 @@ async def stripe_webhook(
 
     if event_type == "checkout.session.completed":
         order_id = int(data["metadata"]["order_id"])
-        order = db.query(Order).filter_by(id=order_id).one()
-        activate_subscription(db, order)
+        order = db.query(Order).filter_by(id=order_id).one_or_none()
+        if order is not None:
+            activate_subscription(db, order)
     elif event_type == "invoice.payment_succeeded":
-        sub = db.query(Subscription).filter_by(stripe_subscription_id=data["subscription"]).one()
-        renew_subscription(db, sub, datetime.datetime.utcnow() + datetime.timedelta(days=30))
+        sub = db.query(Subscription).filter_by(stripe_subscription_id=data["subscription"]).one_or_none()
+        if sub is not None:
+            renew_subscription(db, sub, datetime.datetime.utcnow() + datetime.timedelta(days=30))
     elif event_type == "invoice.payment_failed":
-        sub = db.query(Subscription).filter_by(stripe_subscription_id=data["subscription"]).one()
-        mark_past_due(db, sub)
+        sub = db.query(Subscription).filter_by(stripe_subscription_id=data["subscription"]).one_or_none()
+        if sub is not None:
+            mark_past_due(db, sub)
     elif event_type == "customer.subscription.deleted":
-        sub = db.query(Subscription).filter_by(stripe_subscription_id=data["id"]).one()
-        free_plan = db.query(Plan).filter_by(price_cents=0).first()
-        if free_plan is not None:
-            downgrade_to_free(db, sub, free_plan)
+        sub = db.query(Subscription).filter_by(stripe_subscription_id=data["id"]).one_or_none()
+        if sub is not None:
+            free_plan = db.query(Plan).filter_by(price_cents=0).first()
+            if free_plan is not None:
+                downgrade_to_free(db, sub, free_plan)
 
     return {"received": True}
 
