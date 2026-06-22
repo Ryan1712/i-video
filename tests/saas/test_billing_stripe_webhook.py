@@ -4,6 +4,8 @@ from fastapi.testclient import TestClient
 
 from saas.db import get_db
 from saas.main import app
+import datetime
+
 from saas.models import Order, Plan, Subscription, User
 
 
@@ -59,6 +61,57 @@ def test_invoice_payment_failed_marks_past_due(mock_construct, db_session_factor
 
     assert response.status_code == 200
     assert db_session.query(Subscription).filter_by(id=sub.id).one().status == "past_due"
+    app.dependency_overrides.clear()
+
+
+@patch("saas.routers.billing.construct_webhook_event")
+def test_invoice_payment_succeeded_renews_subscription(mock_construct, db_session_factory, db_session):
+    user, plan, order = _setup(db_session)
+    sub = Subscription(user_id=user.id, plan_id=plan.id, status="past_due", stripe_subscription_id="sub_456")
+    db_session.add(sub)
+    db_session.commit()
+
+    mock_construct.return_value = {
+        "type": "invoice.payment_succeeded",
+        "data": {"object": {"subscription": "sub_456"}},
+    }
+    client = TestClient(app)
+
+    before = datetime.datetime.utcnow()
+    response = client.post(
+        "/billing/webhooks/stripe", content=b"{}", headers={"stripe-signature": "sig"},
+    )
+
+    assert response.status_code == 200
+    updated = db_session.query(Subscription).filter_by(id=sub.id).one()
+    assert updated.status == "active"
+    assert updated.current_period_end is not None
+    assert updated.current_period_end > before
+    app.dependency_overrides.clear()
+
+
+@patch("saas.routers.billing.construct_webhook_event")
+def test_customer_subscription_deleted_downgrades_to_free(mock_construct, db_session_factory, db_session):
+    user, plan, order = _setup(db_session)
+    sub = Subscription(user_id=user.id, plan_id=plan.id, status="active", stripe_subscription_id="sub_789")
+    db_session.add(sub)
+    free_plan = Plan(name="Free", price_cents=0, currency="VND", billing_interval="month", stripe_price_id="price_free", trial_days=0, limits={})
+    db_session.add(free_plan)
+    db_session.commit()
+
+    mock_construct.return_value = {
+        "type": "customer.subscription.deleted",
+        "data": {"object": {"id": "sub_789"}},
+    }
+    client = TestClient(app)
+
+    response = client.post(
+        "/billing/webhooks/stripe", content=b"{}", headers={"stripe-signature": "sig"},
+    )
+
+    assert response.status_code == 200
+    updated = db_session.query(Subscription).filter_by(id=sub.id).one()
+    assert updated.plan_id == free_plan.id
     app.dependency_overrides.clear()
 
 

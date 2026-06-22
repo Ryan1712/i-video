@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from saas.db import Base, get_db
 from saas.main import app
-from saas.models import Plan, User
+from saas.models import Order, Plan, User, Voucher
 from saas.security import create_access_token, get_jwt_secret, hash_password
 
 
@@ -62,4 +62,32 @@ def test_checkout_rejects_unknown_plan(db_session_factory, db_session, monkeypat
     )
 
     assert response.status_code == 404
+    app.dependency_overrides.clear()
+
+
+@patch("saas.routers.billing.create_checkout_session")
+def test_checkout_applies_voucher_discount_to_order_amount(mock_create_session, db_session_factory, db_session, monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret")
+    plan = Plan(name="Pro", price_cents=200000, currency="VND", billing_interval="month", stripe_price_id="price_pro", trial_days=0, limits={})
+    db_session.add(plan)
+    db_session.commit()
+    voucher = Voucher(
+        code="SAVE10", discount_type="percent", discount_value=10,
+        max_uses=5, used_count=0, applicable_plan_ids=[plan.id],
+    )
+    db_session.add(voucher)
+    db_session.commit()
+
+    client, token, user = _client_and_token(db_session_factory, db_session)
+    mock_create_session.return_value = MagicMock(url="https://checkout.stripe.com/cs_test_voucher")
+
+    response = client.post(
+        "/billing/checkout",
+        json={"plan_id": plan.id, "voucher_code": "SAVE10"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    order = db_session.query(Order).filter_by(user_id=user.id, plan_id=plan.id).one()
+    assert order.amount_cents == 180000
     app.dependency_overrides.clear()
