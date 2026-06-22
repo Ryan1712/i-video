@@ -100,3 +100,26 @@ class SubscriptionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PlanIn(BaseModel):
+    name: str
+    price_cents: int
+    currency: str = "VND"
+    billing_interval: str = "month"
+    trial_days: int = 0
+    limits: dict = {}
+
+
+class PlanOut(BaseModel):
+    id: int
+    name: str
+    price_cents: int
+    currency: str
+    billing_interval: str
+    stripe_price_id: str | None
+    trial_days: int
+    limits: dict
+
+    class Config:
+        from_attributes = True
