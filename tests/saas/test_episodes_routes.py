@@ -77,3 +77,26 @@ def test_create_episode_requires_auth(client):
     response = client.post("/episodes", json={"title": "No auth", "scenes": []})
 
     assert response.status_code == 401
+
+
+def test_upload_scene_asset_sets_asset_path(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path))
+    headers = _signup_and_auth_headers(client, email="uploader@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": [{"narration_text": "Scene one"}]},
+        headers=headers,
+    ).json()
+    scene_id = created["scenes"][0]["id"]
+
+    response = client.post(
+        f"/episodes/{created['id']}/scenes/{scene_id}/asset",
+        files={"file": ("hero.png", b"fake-png-bytes", "image/png")},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["asset_path"].endswith(".png")
+
+    refetched = client.get(f"/episodes/{created['id']}", headers=headers).json()
+    assert refetched["scenes"][0]["asset_path"] == response.json()["asset_path"]

@@ -1,13 +1,14 @@
 """Episode and scene CRUD routes."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import get_current_user
 from ..models import Episode, Scene, User
-from ..schemas import EpisodeIn, EpisodeOut
+from ..schemas import EpisodeIn, EpisodeOut, SceneOut
+from ..storage import save_asset
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
@@ -54,3 +55,23 @@ def get_episode(
     current_user: User = Depends(get_current_user),
 ) -> Episode:
     return _get_owned_episode_or_404(episode_id, db, current_user)
+
+
+@router.post("/{episode_id}/scenes/{scene_id}/asset", response_model=SceneOut)
+async def upload_scene_asset(
+    episode_id: int,
+    scene_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Scene:
+    episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    scene = next((s for s in episode.scenes if s.id == scene_id), None)
+    if scene is None:
+        raise HTTPException(status_code=404, detail="Scene not found")
+
+    content = await file.read()
+    relative_path = save_asset(episode_id, scene_id, file.filename, content)
+    scene.asset_path = relative_path
+    db.commit()
+    return scene
