@@ -125,6 +125,19 @@ class PlanOut(BaseModel):
         from_attributes = True
 
 
+class BankTransactionOut(BaseModel):
+    id: int
+    gateway_transaction_id: str
+    amount_cents: int
+    content: str
+    received_at: datetime.datetime
+    status: str
+    matched_order_id: int | None
+
+    class Config:
+        from_attributes = True
+
+
 class VoucherIn(BaseModel):
     code: str
     discount_type: str
