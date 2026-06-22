@@ -9,11 +9,6 @@ from imageio_ffmpeg import get_ffmpeg_exe
 from .captions import build_srt
 from .script_parser import Episode
 
-# Resolve the ffmpeg executable path at import time, before any test patches
-# subprocess.run -- imageio_ffmpeg.get_ffmpeg_exe() internally shells out (via
-# platform.uname()) on first call, which would otherwise hit the mock.
-_FFMPEG_EXE = get_ffmpeg_exe()
-
 
 def _write_concat_list(clip_paths: list[str], list_path: str) -> None:
     with open(list_path, "w", encoding="utf-8") as f:
@@ -30,7 +25,7 @@ def build_episode(
     video_dir: str,
     config: dict,
 ) -> str:
-    ffmpeg_exe = _FFMPEG_EXE
+    ffmpeg_exe = get_ffmpeg_exe()
     output_dir = os.path.join(video_dir, "output")
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, "episode.mp4")

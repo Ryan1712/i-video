@@ -28,7 +28,8 @@ def test_build_episode_runs_ffmpeg_without_music(tmp_path):
         open(p, "wb").close()
 
     fake_result = MagicMock(returncode=0, stderr="")
-    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result) as run_mock:
+    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result) as run_mock, \
+         patch("agent_video.video_builder.get_ffmpeg_exe", return_value="ffmpeg"):
         out_path = build_episode(
             _episode(), clip_paths, audio_paths, [2.5, 3.0], video_dir, DEFAULT_CONFIG
         )
@@ -53,7 +54,8 @@ def test_build_episode_mixes_music_when_present(tmp_path):
     episode = Episode(title="Test", description="", tags=[], scenes=[Scene(name="scene_01", asset="a.png", text="hi")])
 
     fake_result = MagicMock(returncode=0, stderr="")
-    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result) as run_mock:
+    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result) as run_mock, \
+         patch("agent_video.video_builder.get_ffmpeg_exe", return_value="ffmpeg"):
         build_episode(episode, clip_paths, audio_paths, [2.0], video_dir, DEFAULT_CONFIG)
 
     final_cmd = " ".join(run_mock.call_args_list[-1][0][0])
@@ -72,7 +74,8 @@ def test_build_episode_raises_on_ffmpeg_failure(tmp_path):
     episode = Episode(title="Test", description="", tags=[], scenes=[Scene(name="scene_01", asset="a.png", text="hi")])
 
     fake_result = MagicMock(returncode=1, stderr="ffmpeg blew up")
-    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result):
+    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result), \
+         patch("agent_video.video_builder.get_ffmpeg_exe", return_value="ffmpeg"):
         try:
             build_episode(episode, clip_paths, audio_paths, [2.0], video_dir, DEFAULT_CONFIG)
             assert False, "expected RuntimeError"
