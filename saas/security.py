@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import os
 
 import jwt
 from passlib.context import CryptContext
@@ -11,6 +12,13 @@ _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class InvalidTokenError(Exception):
     pass
+
+
+def get_jwt_secret() -> str:
+    secret = os.environ.get("JWT_SECRET")
+    if not secret:
+        raise RuntimeError("JWT_SECRET environment variable is not set")
+    return secret
 
 
 def hash_password(password: str) -> str:

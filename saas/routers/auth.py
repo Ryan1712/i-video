@@ -1,15 +1,13 @@
 """Signup and login routes."""
 from __future__ import annotations
 
-import os
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import User
 from ..schemas import LoginRequest, SignupRequest, TokenResponse
-from ..security import create_access_token, hash_password, verify_password
+from ..security import create_access_token, get_jwt_secret, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,7 +22,7 @@ def signup(payload: SignupRequest, db: Session = Depends(get_db)) -> TokenRespon
     db.add(user)
     db.commit()
 
-    token = create_access_token(user.id, secret=os.environ["JWT_SECRET"])
+    token = create_access_token(user.id, secret=get_jwt_secret())
     return TokenResponse(access_token=token)
 
 
@@ -34,5 +32,5 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_access_token(user.id, secret=os.environ["JWT_SECRET"])
+    token = create_access_token(user.id, secret=get_jwt_secret())
     return TokenResponse(access_token=token)

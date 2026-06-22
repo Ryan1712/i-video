@@ -1,14 +1,12 @@
 """FastAPI dependencies: current authenticated user."""
 from __future__ import annotations
 
-import os
-
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from .db import get_db
 from .models import User
-from .security import InvalidTokenError, decode_access_token
+from .security import InvalidTokenError, decode_access_token, get_jwt_secret
 
 
 def get_current_user(
@@ -18,7 +16,7 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Missing or malformed Authorization header")
 
     token = authorization.removeprefix("Bearer ").strip()
-    secret = os.environ["JWT_SECRET"]
+    secret = get_jwt_secret()
 
     try:
         user_id = decode_access_token(token, secret)

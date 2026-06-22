@@ -6,6 +6,7 @@ from saas.security import (
     InvalidTokenError,
     create_access_token,
     decode_access_token,
+    get_jwt_secret,
     hash_password,
     verify_password,
 )
@@ -43,3 +44,14 @@ def test_create_access_token_respects_expiry():
     token = create_access_token(user_id=1, secret="s", expires_minutes=-1)
     with pytest.raises(InvalidTokenError):
         decode_access_token(token, secret="s")
+
+
+def test_get_jwt_secret_raises_runtime_error_when_unset(monkeypatch):
+    monkeypatch.delenv("JWT_SECRET", raising=False)
+    with pytest.raises(RuntimeError, match="JWT_SECRET environment variable is not set"):
+        get_jwt_secret()
+
+
+def test_get_jwt_secret_returns_value_when_set(monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "some-secret")
+    assert get_jwt_secret() == "some-secret"

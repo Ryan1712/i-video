@@ -69,5 +69,5 @@ def test_run_build_marks_job_failed_on_exception(db_session, db_session_factory,
     episode = fresh.query(Episode).filter_by(id=episode_id).one()
     assert job.status == "failed"
     assert "ElevenLabs exploded" in job.error_message
-    assert episode.status == "ready"
+    assert episode.status == "draft"
     fresh.close()

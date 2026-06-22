@@ -93,7 +93,7 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             job.status = "failed"
             job.error_message = str(e)
         if episode is not None:
-            episode.status = "ready"
+            episode.status = "draft"
         db.commit()
     finally:
         db.close()
