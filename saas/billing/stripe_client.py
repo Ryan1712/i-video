@@ -26,6 +26,7 @@ def create_checkout_session(
     cancel_url: str,
     customer_email: str,
     promotion_code: str | None = None,
+    metadata: dict | None = None,
 ) -> stripe.checkout.Session:
     stripe.api_key = get_stripe_secret_key()
     kwargs = dict(
@@ -37,6 +38,8 @@ def create_checkout_session(
     )
     if promotion_code:
         kwargs["discounts"] = [{"promotion_code": promotion_code}]
+    if metadata:
+        kwargs["metadata"] = metadata
     return stripe.checkout.Session.create(**kwargs)
 
 

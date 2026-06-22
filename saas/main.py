@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from .routers import auth, episodes, jobs
+from .routers import auth, billing, episodes, jobs
 
 app = FastAPI(title="What If API")
 app.include_router(auth.router)
+app.include_router(billing.router)
 app.include_router(episodes.router)
 app.include_router(jobs.router)
