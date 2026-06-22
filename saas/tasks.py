@@ -78,12 +78,7 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             final_dir = os.path.join(_episodes_dir(), str(episode.id))
             os.makedirs(final_dir, exist_ok=True)
             final_path = os.path.join(final_dir, "episode.mp4")
-            if os.path.isfile(out_path):
-                shutil.copyfile(out_path, final_path)
-            else:
-                # build_episode is mocked in unit tests and may return a
-                # path that doesn't exist on disk; persist the path as-is.
-                final_path = out_path
+            shutil.copyfile(out_path, final_path)
 
             episode.output_path = final_path
             episode.status = "built"

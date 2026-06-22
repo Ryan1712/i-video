@@ -35,10 +35,13 @@ def _make_episode_with_one_scene(db_session, tmp_path, monkeypatch):
 def test_run_build_succeeds_and_updates_episode_and_job(db_session, db_session_factory, tmp_path, monkeypatch):
     episode_id, job_id = _make_episode_with_one_scene(db_session, tmp_path, monkeypatch)
 
+    fake_output_path = tmp_path / "fake_engine_output.mp4"
+    fake_output_path.write_bytes(b"fake-mp4-bytes")
+
     with patch("saas.tasks.synthesize_scene") as synth_mock, \
          patch("saas.tasks.get_audio_duration", return_value=2.5), \
          patch("saas.tasks.build_scene_clip") as clip_mock, \
-         patch("saas.tasks.build_episode", return_value="/fake/output/episode.mp4") as build_ep_mock:
+         patch("saas.tasks.build_episode", return_value=str(fake_output_path)) as build_ep_mock:
         run_build(job_id, db_session_factory)
 
     assert synth_mock.called
