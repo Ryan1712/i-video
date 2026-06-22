@@ -63,6 +63,49 @@ def test_build_episode_mixes_music_when_present(tmp_path):
     assert "0.18" in final_cmd  # DEFAULT_CONFIG music_volume
 
 
+def test_build_episode_applies_caption_font_config(tmp_path):
+    video_dir = str(tmp_path / "ep")
+    os.makedirs(video_dir)
+    os.makedirs(os.path.join(video_dir, "output"))
+    clip_paths = [str(tmp_path / "scene_01.mp4")]
+    audio_paths = [str(tmp_path / "scene_01.mp3")]
+    for p in clip_paths + audio_paths:
+        open(p, "wb").close()
+    episode = Episode(title="Test", description="", tags=[], scenes=[Scene(name="scene_01", asset="a.png", text="hi")])
+
+    custom_config = {**DEFAULT_CONFIG, "caption": {"font": "Roboto", "font_size": 60}}
+
+    fake_result = MagicMock(returncode=0, stderr="")
+    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result) as run_mock, \
+         patch("agent_video.video_builder.get_ffmpeg_exe", return_value="ffmpeg"):
+        build_episode(episode, clip_paths, audio_paths, [2.0], video_dir, custom_config)
+
+    final_cmd = " ".join(run_mock.call_args_list[-1][0][0])
+    assert "Roboto" in final_cmd
+    assert "FontSize=60" in final_cmd
+
+
+def test_build_episode_escapes_single_quote_in_srt_path(tmp_path):
+    video_dir = str(tmp_path / "ep's folder")
+    os.makedirs(video_dir)
+    os.makedirs(os.path.join(video_dir, "output"))
+    clip_paths = [str(tmp_path / "scene_01.mp4")]
+    audio_paths = [str(tmp_path / "scene_01.mp3")]
+    for p in clip_paths + audio_paths:
+        open(p, "wb").close()
+    episode = Episode(title="Test", description="", tags=[], scenes=[Scene(name="scene_01", asset="a.png", text="hi")])
+
+    fake_result = MagicMock(returncode=0, stderr="")
+    with patch("agent_video.video_builder.subprocess.run", return_value=fake_result) as run_mock, \
+         patch("agent_video.video_builder.get_ffmpeg_exe", return_value="ffmpeg"):
+        build_episode(episode, clip_paths, audio_paths, [2.0], video_dir, DEFAULT_CONFIG)
+
+    final_cmd_args = run_mock.call_args_list[-1][0][0]
+    subtitles_arg = next(a for a in final_cmd_args if a.startswith("subtitles="))
+    assert "ep\\'s folder" in subtitles_arg
+    assert "ep's folder" not in subtitles_arg
+
+
 def test_build_episode_raises_on_ffmpeg_failure(tmp_path):
     video_dir = str(tmp_path / "ep")
     os.makedirs(video_dir)

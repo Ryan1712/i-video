@@ -57,7 +57,13 @@ def build_episode(
 
     srt_path = os.path.join(output_dir, "captions.srt")
     build_srt(episode, durations, srt_path)
-    srt_filter_path = srt_path.replace("\\", "/").replace(":", "\\:")
+    srt_filter_path = (
+        srt_path.replace("\\", "/").replace(":", "\\:").replace("'", "\\'")
+    )
+
+    font = config["caption"]["font"]
+    font_size = config["caption"]["font_size"]
+    force_style = f"force_style='FontName={font},FontSize={font_size}'"
 
     music_path = os.path.join(video_dir, "music.mp3")
     has_music = os.path.isfile(music_path)
@@ -70,7 +76,7 @@ def build_episode(
             f"[1:a]volume=1.0[narration];"
             f"[2:a]volume={music_volume}[music];"
             f"[narration][music]amix=inputs=2:duration=first[mixed_audio];"
-            f"[0:v]subtitles='{srt_filter_path}'[vout]"
+            f"[0:v]subtitles='{srt_filter_path}':{force_style}[vout]"
         )
         final_cmd += [
             "-filter_complex", filter_complex,
@@ -78,7 +84,7 @@ def build_episode(
         ]
     else:
         final_cmd += [
-            "-vf", f"subtitles='{srt_filter_path}'",
+            "-vf", f"subtitles='{srt_filter_path}':{force_style}",
             "-map", "0:v", "-map", "1:a",
         ]
     final_cmd += ["-c:v", "libx264", "-c:a", "aac", "-shortest", out_path]
