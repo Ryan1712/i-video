@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from .routers import (
+    admin_audit,
     admin_plans,
     admin_settings,
     admin_transactions,
@@ -25,3 +26,4 @@ app.include_router(admin_vouchers.router)
 app.include_router(admin_transactions.router)
 app.include_router(admin_users.router)
 app.include_router(admin_settings.router)
+app.include_router(admin_audit.router)

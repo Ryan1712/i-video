@@ -179,3 +179,19 @@ class UserOut(BaseModel):
     role: str
     is_suspended: bool
     plan_name: str | None
+
+
+class AuditLogOut(BaseModel):
+    id: int
+    actor_user_id: int
+    actor_role: str
+    action: str
+    target_type: str
+    target_id: int
+    before_data: dict | None
+    after_data: dict | None
+    ip_address: str | None
+    created_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
