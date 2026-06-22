@@ -19,7 +19,7 @@ from ..billing.stripe_client import construct_webhook_event, create_checkout_ses
 from ..db import get_db
 from ..deps import get_current_user
 from ..models import Order, Plan, Subscription, User
-from ..schemas import CheckoutRequest, CheckoutResponse
+from ..schemas import BankTransferRequest, BankTransferResponse, CheckoutRequest, CheckoutResponse
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
@@ -69,6 +69,39 @@ def checkout(
         metadata={"order_id": str(order.id)},
     )
     return CheckoutResponse(checkout_url=session.url)
+
+
+@router.post("/orders/bank-transfer", response_model=BankTransferResponse)
+def create_bank_transfer_order(
+    payload: BankTransferRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> BankTransferResponse:
+    plan = db.query(Plan).filter_by(id=payload.plan_id).one_or_none()
+    if plan is None:
+        raise HTTPException(status_code=404, detail="Plan not found")
+
+    amount_cents = plan.price_cents
+    if payload.voucher_code:
+        try:
+            voucher = validate_voucher(db, payload.voucher_code, plan.id)
+        except VoucherError as e:
+            raise HTTPException(status_code=400, detail=e.code)
+        amount_cents = apply_voucher_discount(amount_cents, voucher)
+
+    unique_code = _generate_unique_code(db)
+    order = Order(
+        user_id=current_user.id, plan_id=plan.id, amount_cents=amount_cents, currency=plan.currency,
+        payment_method="bank_transfer", status="pending", unique_code=unique_code,
+    )
+    db.add(order)
+    db.commit()
+
+    qr_payload = f"bank:whatif|amount:{amount_cents}|content:{unique_code}"
+    return BankTransferResponse(
+        order_id=order.id, unique_code=unique_code, amount_cents=amount_cents,
+        bank_account_qr_payload=qr_payload,
+    )
 
 
 @router.post("/webhooks/stripe")
