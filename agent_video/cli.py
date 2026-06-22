@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from .config import load_config
 from .image_builder import build_scene_clip
 from .manifest import build_manifest, print_manifest_report, write_manifest
-from .script_parser import parse_script
+from .script_parser import ScriptParseError, parse_script
 from .tts import get_audio_duration, synthesize_scene
 from .video_builder import build_episode
 from .youtube_uploader import upload_video
@@ -145,25 +145,32 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    if args.command == "new":
-        ep_dir = cmd_new(args.title, args.videos_dir)
-        print(f"Đã tạo: {ep_dir}")
-        return 0
+    try:
+        if args.command == "new":
+            ep_dir = cmd_new(args.title, args.videos_dir)
+            print(f"Đã tạo: {ep_dir}")
+            return 0
 
-    if args.command == "status":
-        cmd_status(args.video_dir)
-        return 0
+        if args.command == "status":
+            cmd_status(args.video_dir)
+            return 0
 
-    if args.command == "build":
-        result = cmd_build(args.video_dir)
-        return 0 if result else 1
+        if args.command == "build":
+            result = cmd_build(args.video_dir)
+            return 0 if result else 1
 
-    if args.command == "upload":
-        privacy = "public" if args.public else ("unlisted" if args.unlisted else "private")
-        token_path = args.token_path or os.path.join(args.video_dir, ".yt_token.json")
-        return cmd_upload(args.video_dir, privacy, args.client_secret, token_path)
+        if args.command == "upload":
+            privacy = "public" if args.public else ("unlisted" if args.unlisted else "private")
+            token_path = args.token_path or os.path.join(args.video_dir, ".yt_token.json")
+            return cmd_upload(args.video_dir, privacy, args.client_secret, token_path)
 
-    return 1
+        return 1
+    except ScriptParseError as e:
+        print(f"Lỗi: {e}")
+        return 1
+    except Exception as e:
+        print(f"Lỗi không mong đợi: {e}")
+        return 1
 
 
 if __name__ == "__main__":

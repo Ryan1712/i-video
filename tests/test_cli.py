@@ -1,7 +1,7 @@
 import os
 from unittest.mock import patch
 
-from agent_video.cli import slugify, next_episode_number, cmd_new, cmd_status, cmd_build
+from agent_video.cli import slugify, next_episode_number, cmd_new, cmd_status, cmd_build, cmd_upload, main
 
 
 def test_slugify_lowercases_and_dashes():
@@ -91,3 +91,72 @@ def test_cmd_build_runs_full_pipeline_when_ready(tmp_path):
     assert synth_mock.called
     assert clip_mock.called
     assert build_ep_mock.called
+
+
+def _make_episode_dir_with_script(tmp_path, with_video=False):
+    ep_dir = str(tmp_path / "ep")
+    os.makedirs(os.path.join(ep_dir, "output"))
+    with open(os.path.join(ep_dir, "script.md"), "w", encoding="utf-8") as f:
+        f.write("title: Test\n\n## scene_01\nasset: hero.png\ntext: hi\n")
+    if with_video:
+        open(os.path.join(ep_dir, "output", "episode.mp4"), "wb").close()
+    return ep_dir
+
+
+def test_cmd_upload_missing_video_does_not_prompt_or_upload(tmp_path, capsys):
+    ep_dir = _make_episode_dir_with_script(tmp_path, with_video=False)
+
+    with patch("builtins.input") as input_mock, \
+         patch("agent_video.cli.upload_video") as upload_mock:
+        result = cmd_upload(ep_dir, "private", "client_secret.json", os.path.join(ep_dir, ".yt_token.json"))
+
+    assert result == 1
+    input_mock.assert_not_called()
+    upload_mock.assert_not_called()
+    captured = capsys.readouterr()
+    assert "build" in captured.out.lower()
+
+
+def test_cmd_upload_declined_confirmation_does_not_upload(tmp_path):
+    ep_dir = _make_episode_dir_with_script(tmp_path, with_video=True)
+
+    with patch("builtins.input", return_value="no"), \
+         patch("agent_video.cli.upload_video") as upload_mock:
+        result = cmd_upload(ep_dir, "private", "client_secret.json", os.path.join(ep_dir, ".yt_token.json"))
+
+    assert result == 1
+    upload_mock.assert_not_called()
+
+
+def test_cmd_upload_confirmed_calls_upload_video(tmp_path):
+    ep_dir = _make_episode_dir_with_script(tmp_path, with_video=True)
+    client_secret_path = "client_secret.json"
+    token_path = os.path.join(ep_dir, ".yt_token.json")
+    video_path = os.path.join(ep_dir, "output", "episode.mp4")
+
+    with patch("builtins.input", return_value="yes"), \
+         patch("agent_video.cli.upload_video", return_value="abc123") as upload_mock:
+        result = cmd_upload(ep_dir, "private", client_secret_path, token_path)
+
+    assert result == 0
+    upload_mock.assert_called_once()
+    args = upload_mock.call_args[0]
+    assert args[0] == video_path
+    assert args[1].title == "Test"
+    assert args[2] == "private"
+    assert args[3] == client_secret_path
+    assert args[4] == token_path
+
+
+def test_main_status_handles_script_parse_error(tmp_path, capsys):
+    ep_dir = str(tmp_path / "ep")
+    os.makedirs(ep_dir)
+    # Malformed script.md (no scene blocks) -> parse_script raises ScriptParseError.
+    with open(os.path.join(ep_dir, "script.md"), "w", encoding="utf-8") as f:
+        f.write("title: Test\n\nno scenes here\n")
+
+    result = main(["status", ep_dir])
+
+    assert result == 1
+    captured = capsys.readouterr()
+    assert "Lỗi" in captured.out
