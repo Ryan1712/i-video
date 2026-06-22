@@ -159,3 +159,11 @@ class VoucherOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    role: str
+    is_suspended: bool
+    plan_name: str | None
