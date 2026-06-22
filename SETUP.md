@@ -25,3 +25,15 @@ python -m agent_video status videos/ep01_what-if-the-moon-disappeared
 python -m agent_video build videos/ep01_what-if-the-moon-disappeared
 python -m agent_video upload videos/ep01_what-if-the-moon-disappeared
 ```
+
+## 5. SaaS foundation (API + DB + background jobs)
+
+1. Start Postgres and Redis: `docker compose up -d`
+2. Copy the new variables from `.env.example` into `.env`: `DATABASE_URL`, `JWT_SECRET` (use a long random string), `REDIS_URL`.
+3. Create the database tables (one-time, until a real migration tool is introduced):
+   ```
+   py -c "from saas.db import Base, init_session_factory; Base.metadata.create_all(init_session_factory().kw['bind'])"
+   ```
+4. Start the API: `py -m uvicorn saas.main:app --reload`
+5. Start a Celery worker (separate terminal): `py -m celery -A saas.celery_app.celery_app worker --loglevel=info --pool=solo`
+6. Open http://127.0.0.1:8000/docs for interactive API docs (signup, create an episode, upload assets per scene, trigger a build, poll `/jobs/{id}`).
