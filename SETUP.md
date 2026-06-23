@@ -43,4 +43,12 @@ python -m agent_video upload videos/ep01_what-if-the-moon-disappeared
 1. Create a [Stripe](https://dashboard.stripe.com/test/apikeys) test-mode account, copy the **Secret key** into `STRIPE_SECRET_KEY`.
 2. Create a webhook endpoint (Stripe CLI for local dev: `stripe listen --forward-to localhost:8000/billing/webhooks/stripe`), copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
 3. Set `BANK_WEBHOOK_SECRET` to a long random string; configure your bank-transfer gateway (SePay/Casso) to send that value in the `x-webhook-secret` header when calling `POST /billing/webhooks/bank`.
-4. Plans (`plans` table) are currently seeded manually via SQL/DB shell — the admin "create plan" UI that auto-syncs Stripe Products/Prices is a separate, not-yet-built plan.
+4. Plans are created via `POST /admin/plans` (see section 7 below), which auto-syncs the matching Stripe Product/Price.
+
+## 7. Admin panel (plans, vouchers, transactions, users, settings, audit log)
+
+1. All `/admin/*` routes require a JWT for a user whose `role` column is `admin` — promote a user by setting `role='admin'` directly in the `users` table (no self-service promotion endpoint exists, by design).
+2. Creating or updating a plan via `POST/PATCH /admin/plans` automatically creates/updates the matching Stripe Product/Price using the same `STRIPE_SECRET_KEY` configured in section 6 — no manual Stripe dashboard work needed for v1.
+3. Unmatched bank transfers show up at `GET /admin/transactions/unmatched`; link one to a pending order with `POST /admin/transactions/{transaction_id}/link/{order_id}`.
+4. Every plan/voucher/transaction/user/setting change and every admin login is written to `audit_logs`; browse it at `GET /admin/audit` (filter by `actor_user_id`, `action`, `from_date`, `to_date`) or export with `GET /admin/audit/export.csv`.
+5. Support widget IDs (Messenger Page ID, Zalo OA ID, Facebook page URL) are set via `PUT /admin/settings/{key}` — the frontend reads `GET /admin/settings` to decide which widgets to render.
