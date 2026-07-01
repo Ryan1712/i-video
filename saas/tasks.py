@@ -17,11 +17,8 @@ from agent_video.video_builder import build_episode
 from .celery_app import celery_app
 from .db import init_session_factory
 from .models import Episode, Job
-from .storage import get_asset_abs_path
-
-
-def _episodes_dir() -> str:
-    return os.environ.get("EPISODES_DIR", os.path.join("var", "episodes"))
+from .object_storage import download_to_path
+from .storage import save_output
 
 
 def run_build(job_id: int, session_factory: sessionmaker) -> None:
@@ -39,13 +36,17 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
         temp_dir = tempfile.mkdtemp(prefix=f"ep{episode.id}_")
         try:
             os.makedirs(os.path.join(temp_dir, "audio"))
+            os.makedirs(os.path.join(temp_dir, "assets"))
             os.makedirs(os.path.join(temp_dir, "output"))
 
             engine_scenes = []
             for scene in episode.scenes:
                 scene_name = f"scene_{scene.order_index:02d}"
+                _, ext = os.path.splitext(scene.asset_object_key)
+                local_asset_path = os.path.join(temp_dir, "assets", f"{scene_name}{ext}")
+                download_to_path(scene.asset_object_key, local_asset_path)
                 engine_scenes.append(
-                    EngineScene(name=scene_name, asset=get_asset_abs_path(scene.asset_path), text=scene.narration_text)
+                    EngineScene(name=scene_name, asset=local_asset_path, text=scene.narration_text)
                 )
             engine_episode = EngineEpisode(
                 title=episode.title,
@@ -75,12 +76,8 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
 
             out_path = build_episode(engine_episode, clip_paths, audio_paths, durations, temp_dir, config)
 
-            final_dir = os.path.join(_episodes_dir(), str(episode.id))
-            os.makedirs(final_dir, exist_ok=True)
-            final_path = os.path.join(final_dir, "episode.mp4")
-            shutil.copyfile(out_path, final_path)
-
-            episode.output_path = final_path
+            output_key = save_output(episode.id, out_path)
+            episode.output_object_key = output_key
             episode.status = "built"
             job.status = "done"
             job.progress_pct = 100
