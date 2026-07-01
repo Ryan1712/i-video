@@ -139,7 +139,9 @@ def test_get_scene_asset_url_returns_presigned_url(client, monkeypatch):
     response = client.get(f"/episodes/{created['id']}/scenes/{scene_id}/asset-url", headers=headers)
 
     assert response.status_code == 200
-    assert "url" in response.json()
+    url = response.json()["url"]
+    assert url.startswith("https://")
+    assert "whatif-test-bucket" in url
 
 
 def test_get_scene_asset_url_requires_ownership(client):
