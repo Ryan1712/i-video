@@ -49,6 +49,7 @@ class EpisodeOut(BaseModel):
     tags: str
     status: str
     output_path: str | None
+    youtube_video_id: str | None = None
     scenes: list[SceneOut]
 
     class Config:
@@ -179,6 +180,16 @@ class UserOut(BaseModel):
     role: str
     is_suspended: bool
     plan_name: str | None
+
+
+class YouTubeStatusOut(BaseModel):
+    connected: bool
+    channel_id: str | None = None
+    channel_title: str | None = None
+
+
+class YouTubeConnectOut(BaseModel):
+    url: str
 
 
 class AuditLogOut(BaseModel):

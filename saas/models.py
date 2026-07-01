@@ -38,6 +38,7 @@ class Episode(Base):
     tags: Mapped[str] = mapped_column(String(255), default="")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
     output_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    youtube_video_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
     scenes: Mapped[list["Scene"]] = relationship(
@@ -152,3 +153,17 @@ class AuditLog(Base):
     after_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     ip_address: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class YouTubeConnection(Base):
+    __tablename__ = "youtube_connections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    channel_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    channel_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    encrypted_refresh_token: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )
