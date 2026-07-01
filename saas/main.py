@@ -14,6 +14,7 @@ from .routers import (
     billing,
     episodes,
     jobs,
+    youtube,
 )
 
 app = FastAPI(title="What If API")
@@ -27,3 +28,4 @@ app.include_router(admin_transactions.router)
 app.include_router(admin_users.router)
 app.include_router(admin_settings.router)
 app.include_router(admin_audit.router)
+app.include_router(youtube.router)
