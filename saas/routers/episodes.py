@@ -7,10 +7,10 @@ from sqlalchemy.orm import Session
 from ..billing.limits import PlanLimitError, check_episode_limit
 from ..db import get_db
 from ..deps import get_current_user
-from ..models import Episode, Job, Scene, User
+from ..models import Episode, Job, Scene, User, YouTubeConnection
 from ..schemas import EpisodeIn, EpisodeOut, JobOut, SceneOut
 from ..storage import save_asset
-from ..tasks import build_episode_task
+from ..tasks import build_episode_task, upload_episode_task
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
@@ -104,4 +104,25 @@ def trigger_build(
     db.commit()
 
     build_episode_task.delay(job.id)
+    return job
+
+
+@router.post("/{episode_id}/upload", response_model=JobOut, status_code=202)
+def trigger_upload(
+    episode_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Job:
+    episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    if episode.status != "built":
+        raise HTTPException(status_code=409, detail="ERR_EPISODE_NOT_BUILT")
+    conn = db.query(YouTubeConnection).filter_by(user_id=current_user.id).one_or_none()
+    if conn is None:
+        raise HTTPException(status_code=409, detail="ERR_YOUTUBE_NOT_CONNECTED")
+
+    job = Job(episode_id=episode.id, type="upload", status="queued")
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    upload_episode_task.delay(job.id)
     return job

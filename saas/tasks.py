@@ -5,6 +5,9 @@ import os
 import shutil
 import tempfile
 
+from google.oauth2.credentials import Credentials as GoogleCredentials
+from googleapiclient.discovery import build as build_youtube
+from googleapiclient.http import MediaFileUpload
 from sqlalchemy.orm import sessionmaker
 
 from agent_video.config import DEFAULT_CONFIG
@@ -16,8 +19,9 @@ from agent_video.video_builder import build_episode
 
 from .celery_app import celery_app
 from .db import init_session_factory
-from .models import Episode, Job
-from .storage import get_asset_abs_path
+from .models import Episode, Job, YouTubeConnection
+from .storage import download_to_path, get_asset_abs_path
+from .youtube_auth import decrypt_token
 
 
 def _episodes_dir() -> str:
@@ -102,3 +106,74 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
 @celery_app.task(name="saas.tasks.build_episode_task")
 def build_episode_task(job_id: int) -> None:
     run_build(job_id, init_session_factory())
+
+
+def run_upload(job_id: int, session_factory: sessionmaker) -> None:
+    db = session_factory()
+    job = None
+    episode = None
+    try:
+        job = db.query(Job).filter_by(id=job_id).one()
+        episode = db.query(Episode).filter_by(id=job.episode_id).one()
+
+        job.status = "running"
+        episode.status = "uploading"
+        db.commit()
+
+        conn = db.query(YouTubeConnection).filter_by(user_id=episode.user_id).one_or_none()
+        if conn is None:
+            raise RuntimeError("YouTube not connected")
+
+        refresh_token = decrypt_token(conn.encrypted_refresh_token)
+        creds = GoogleCredentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=os.environ["GOOGLE_CLIENT_ID"],
+            client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+            scopes=["https://www.googleapis.com/auth/youtube.upload"],
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as f:
+            local_path = f.name
+        try:
+            download_to_path(episode.output_object_key, local_path)
+            youtube = build_youtube("youtube", "v3", credentials=creds)
+            body = {
+                "snippet": {
+                    "title": episode.title,
+                    "description": episode.description,
+                    "tags": [t.strip() for t in episode.tags.split(",") if t.strip()],
+                },
+                "status": {"privacyStatus": "private"},
+            }
+            media = MediaFileUpload(local_path, chunksize=-1, resumable=True)
+            response = youtube.videos().insert(
+                part="snippet,status", body=body, media_body=media
+            ).execute()
+            episode.youtube_video_id = response["id"]
+        finally:
+            try:
+                os.unlink(local_path)
+            except OSError:
+                pass  # Windows: file may still be held open by MediaFileUpload
+
+        episode.status = "uploaded"
+        job.status = "done"
+        job.progress_pct = 100
+        db.commit()
+
+    except Exception as e:
+        if job is not None:
+            job.status = "failed"
+            job.error_message = str(e)
+        if episode is not None:
+            episode.status = "built"  # revert so user can retry
+        db.commit()
+    finally:
+        db.close()
+
+
+@celery_app.task(name="saas.tasks.upload_episode_task")
+def upload_episode_task(job_id: int) -> None:
+    run_upload(job_id, init_session_factory())

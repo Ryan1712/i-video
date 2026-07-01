@@ -1,16 +1,21 @@
 from unittest.mock import patch
 
 import pytest
+from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 
 from saas.db import get_db
 from saas.main import app
-from saas.models import Plan, Subscription, User
+from saas.models import Plan, Subscription, User, YouTubeConnection
+from saas.youtube_auth import encrypt_token
+
+_FAKE_ENCRYPTION_KEY = Fernet.generate_key().decode()
 
 
 @pytest.fixture
 def client(db_session_factory, monkeypatch):
     monkeypatch.setenv("JWT_SECRET", "test-secret")
+    monkeypatch.setenv("TOKEN_ENCRYPTION_KEY", _FAKE_ENCRYPTION_KEY)
 
     def override_get_db():
         db = db_session_factory()
@@ -169,3 +174,77 @@ def test_trigger_build_enqueues_job_when_all_assets_present(client, tmp_path, mo
     assert response.status_code == 202
     assert response.json()["status"] == "queued"
     task_mock.delay.assert_called_once()
+
+
+def test_trigger_upload_enqueues_job(client, db_session_factory):
+    headers = _signup_and_auth_headers(client, email="uploader@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": []},
+        headers=headers,
+    ).json()
+    episode_id = created["id"]
+
+    # Set episode status to built + output_object_key, and add YouTubeConnection
+    session = db_session_factory()
+    from saas.models import Episode as EpisodeModel
+    ep = session.query(EpisodeModel).filter_by(id=episode_id).one()
+    ep.status = "built"
+    ep.output_object_key = "episodes/1/episode.mp4"
+    user = session.query(User).filter_by(email="uploader@example.com").one()
+    conn = YouTubeConnection(
+        user_id=user.id,
+        channel_id="UC_test",
+        channel_title="Test Channel",
+        encrypted_refresh_token=encrypt_token("fake-refresh-token"),
+    )
+    session.add(conn)
+    session.commit()
+    session.close()
+
+    with patch("saas.routers.episodes.upload_episode_task") as task_mock:
+        response = client.post(f"/episodes/{episode_id}/upload", headers=headers)
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body["status"] == "queued"
+    task_mock.delay.assert_called_once()
+
+
+def test_trigger_upload_requires_built_status(client):
+    headers = _signup_and_auth_headers(client, email="uploader2@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": []},
+        headers=headers,
+    ).json()
+    # Episode is in draft status by default
+
+    response = client.post(f"/episodes/{created['id']}/upload", headers=headers)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "ERR_EPISODE_NOT_BUILT"
+
+
+def test_trigger_upload_requires_youtube_connected(client, db_session_factory):
+    headers = _signup_and_auth_headers(client, email="uploader3@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": []},
+        headers=headers,
+    ).json()
+    episode_id = created["id"]
+
+    # Set episode status to built but do NOT add YouTubeConnection
+    session = db_session_factory()
+    from saas.models import Episode as EpisodeModel
+    ep = session.query(EpisodeModel).filter_by(id=episode_id).one()
+    ep.status = "built"
+    ep.output_object_key = "episodes/1/episode.mp4"
+    session.commit()
+    session.close()
+
+    response = client.post(f"/episodes/{episode_id}/upload", headers=headers)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "ERR_YOUTUBE_NOT_CONNECTED"

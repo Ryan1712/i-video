@@ -38,6 +38,7 @@ class Episode(Base):
     tags: Mapped[str] = mapped_column(String(255), default="")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
     output_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    output_object_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     youtube_video_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
