@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from .object_storage import ensure_bucket
 from .routers import (
     admin_audit,
     admin_plans,
@@ -27,3 +28,8 @@ app.include_router(admin_transactions.router)
 app.include_router(admin_users.router)
 app.include_router(admin_settings.router)
 app.include_router(admin_audit.router)
+
+
+@app.on_event("startup")
+def _ensure_bucket_on_startup() -> None:
+    ensure_bucket()

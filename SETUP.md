@@ -36,7 +36,8 @@ python -m agent_video upload videos/ep01_what-if-the-moon-disappeared
    ```
 4. Start the API: `py -m uvicorn saas.main:app --reload`
 5. Start a Celery worker (separate terminal): `py -m celery -A saas.celery_app.celery_app worker --loglevel=info --pool=solo`
-6. Open http://127.0.0.1:8000/docs for interactive API docs (signup, create an episode, upload assets per scene, trigger a build, poll `/jobs/{id}`).
+6. Start MinIO (already included in the `docker compose up -d` from step 1) and copy the new variables from `.env.example` into `.env`: `S3_ENDPOINT_URL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET_NAME`. The bucket is created automatically on API/worker startup — no manual `mc` setup needed. The MinIO console is at http://localhost:9001 (login with `S3_ACCESS_KEY`/`S3_SECRET_KEY`) if you want to browse uploaded objects.
+7. Open http://127.0.0.1:8000/docs for interactive API docs (signup, create an episode, upload assets per scene, trigger a build, poll `/jobs/{id}`).
 
 ## 6. Billing (Stripe + VN bank transfer)
 
