@@ -15,5 +15,18 @@ services:
     ports:
       - "6379:6379"
 
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: whatif
+      MINIO_ROOT_PASSWORD: whatifsecret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
 volumes:
   pgdata:
+  miniodata:

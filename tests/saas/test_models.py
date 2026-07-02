@@ -33,10 +33,10 @@ def test_episode_with_scenes_relationship(db_session):
 
     fetched = db_session.query(Episode).filter_by(title="What If The Moon Disappeared").one()
     assert fetched.status == "draft"
-    assert fetched.output_path is None
+    assert fetched.output_object_key is None
     assert len(fetched.scenes) == 2
     assert fetched.scenes[0].narration_text == "Scene one text"
-    assert fetched.scenes[0].asset_path is None
+    assert fetched.scenes[0].asset_object_key is None
     assert fetched.youtube_video_id is None
 
 

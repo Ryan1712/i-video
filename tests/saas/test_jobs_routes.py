@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from moto import mock_aws
 from unittest.mock import patch
 
 from saas.db import get_db
@@ -28,8 +29,19 @@ def _signup_and_auth_headers(client, email):
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_get_job_returns_status_for_own_episode(client, tmp_path, monkeypatch):
-    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path))
+def _set_s3_env(monkeypatch):
+    monkeypatch.setenv("S3_ENDPOINT_URL", "https://s3.amazonaws.com")
+    monkeypatch.setenv("S3_ACCESS_KEY", "test-key")
+    monkeypatch.setenv("S3_SECRET_KEY", "test-secret")
+    monkeypatch.setenv("S3_BUCKET_NAME", "whatif-test-bucket")
+
+
+@mock_aws
+def test_get_job_returns_status_for_own_episode(client, monkeypatch):
+    _set_s3_env(monkeypatch)
+    from saas.object_storage import ensure_bucket
+
+    ensure_bucket()
     headers = _signup_and_auth_headers(client, "jobowner@example.com")
     created = client.post(
         "/episodes", json={"title": "Ep", "scenes": [{"narration_text": "Scene one"}]}, headers=headers
@@ -49,8 +61,12 @@ def test_get_job_returns_status_for_own_episode(client, tmp_path, monkeypatch):
     assert response.json()["status"] == "queued"
 
 
-def test_get_job_returns_404_for_other_users_job(client, tmp_path, monkeypatch):
-    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path))
+@mock_aws
+def test_get_job_returns_404_for_other_users_job(client, monkeypatch):
+    _set_s3_env(monkeypatch)
+    from saas.object_storage import ensure_bucket
+
+    ensure_bucket()
     headers_a = _signup_and_auth_headers(client, "joba@example.com")
     headers_b = _signup_and_auth_headers(client, "jobb@example.com")
     created = client.post(

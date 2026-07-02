@@ -37,7 +37,6 @@ class Episode(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     tags: Mapped[str] = mapped_column(String(255), default="")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
-    output_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     output_object_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     youtube_video_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
@@ -54,7 +53,7 @@ class Scene(Base):
     episode_id: Mapped[int] = mapped_column(ForeignKey("episodes.id"), nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     narration_text: Mapped[str] = mapped_column(Text, nullable=False)
-    asset_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    asset_object_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
     episode: Mapped["Episode"] = relationship(back_populates="scenes")

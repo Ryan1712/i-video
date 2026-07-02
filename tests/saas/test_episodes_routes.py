@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
+from moto import mock_aws
 
 from saas.db import get_db
 from saas.main import app
@@ -87,8 +88,19 @@ def test_create_episode_requires_auth(client):
     assert response.status_code == 401
 
 
-def test_upload_scene_asset_sets_asset_path(client, tmp_path, monkeypatch):
-    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path))
+def _set_s3_env(monkeypatch):
+    monkeypatch.setenv("S3_ENDPOINT_URL", "https://s3.amazonaws.com")
+    monkeypatch.setenv("S3_ACCESS_KEY", "test-key")
+    monkeypatch.setenv("S3_SECRET_KEY", "test-secret")
+    monkeypatch.setenv("S3_BUCKET_NAME", "whatif-test-bucket")
+
+
+@mock_aws
+def test_upload_scene_asset_sets_asset_object_key(client, monkeypatch):
+    _set_s3_env(monkeypatch)
+    from saas.object_storage import ensure_bucket
+
+    ensure_bucket()
     headers = _signup_and_auth_headers(client, email="uploader@example.com")
     created = client.post(
         "/episodes",
@@ -104,10 +116,61 @@ def test_upload_scene_asset_sets_asset_path(client, tmp_path, monkeypatch):
     )
 
     assert response.status_code == 200
-    assert response.json()["asset_path"].endswith(".png")
+    assert response.json()["asset_object_key"].endswith(".png")
 
     refetched = client.get(f"/episodes/{created['id']}", headers=headers).json()
-    assert refetched["scenes"][0]["asset_path"] == response.json()["asset_path"]
+    assert refetched["scenes"][0]["asset_object_key"] == response.json()["asset_object_key"]
+
+
+@mock_aws
+def test_get_scene_asset_url_returns_presigned_url(client, monkeypatch):
+    _set_s3_env(monkeypatch)
+    from saas.object_storage import ensure_bucket
+
+    ensure_bucket()
+    headers = _signup_and_auth_headers(client, email="asseturl@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": [{"narration_text": "Scene one"}]},
+        headers=headers,
+    ).json()
+    scene_id = created["scenes"][0]["id"]
+    client.post(
+        f"/episodes/{created['id']}/scenes/{scene_id}/asset",
+        files={"file": ("hero.png", b"fake-bytes", "image/png")},
+        headers=headers,
+    )
+
+    response = client.get(f"/episodes/{created['id']}/scenes/{scene_id}/asset-url", headers=headers)
+
+    assert response.status_code == 200
+    url = response.json()["url"]
+    assert url.startswith("https://")
+    assert "whatif-test-bucket" in url
+
+
+def test_get_scene_asset_url_requires_ownership(client):
+    headers_a = _signup_and_auth_headers(client, email="ownera@example.com")
+    headers_b = _signup_and_auth_headers(client, email="ownerb@example.com")
+    created = client.post(
+        "/episodes",
+        json={"title": "Ep", "scenes": [{"narration_text": "Scene one"}]},
+        headers=headers_a,
+    ).json()
+    scene_id = created["scenes"][0]["id"]
+
+    response = client.get(f"/episodes/{created['id']}/scenes/{scene_id}/asset-url", headers=headers_b)
+
+    assert response.status_code == 404
+
+
+def test_get_output_url_returns_404_when_not_built(client):
+    headers = _signup_and_auth_headers(client, email="nooutput@example.com")
+    created = client.post("/episodes", json={"title": "Ep", "scenes": []}, headers=headers).json()
+
+    response = client.get(f"/episodes/{created['id']}/output-url", headers=headers)
+
+    assert response.status_code == 404
 
 
 def test_trigger_build_rejects_episode_with_missing_assets(client):
@@ -153,8 +216,12 @@ def test_trigger_build_rejects_when_at_plan_limit(client, db_session_factory):
     assert response.json()["detail"] == "ERR_PLAN_LIMIT_REACHED"
 
 
+@mock_aws
 def test_trigger_build_enqueues_job_when_all_assets_present(client, tmp_path, monkeypatch):
-    monkeypatch.setenv("UPLOADS_DIR", str(tmp_path))
+    _set_s3_env(monkeypatch)
+    from saas.object_storage import ensure_bucket
+
+    ensure_bucket()
     headers = _signup_and_auth_headers(client, email="builder2@example.com")
     created = client.post(
         "/episodes",

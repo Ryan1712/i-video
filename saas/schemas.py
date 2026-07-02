@@ -29,7 +29,7 @@ class SceneOut(BaseModel):
     id: int
     order_index: int
     narration_text: str
-    asset_path: str | None
+    asset_object_key: str | None
 
     class Config:
         from_attributes = True
@@ -48,12 +48,20 @@ class EpisodeOut(BaseModel):
     description: str
     tags: str
     status: str
-    output_path: str | None
+    output_object_key: str | None
     youtube_video_id: str | None = None
     scenes: list[SceneOut]
 
     class Config:
         from_attributes = True
+
+
+class AssetUrlOut(BaseModel):
+    url: str
+
+
+class OutputUrlOut(BaseModel):
+    url: str
 
 
 class JobOut(BaseModel):
