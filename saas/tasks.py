@@ -124,6 +124,12 @@ def run_upload(job_id: int, session_factory: sessionmaker) -> None:
         if conn is None:
             raise RuntimeError("YouTube not connected")
 
+        if not episode.output_object_key:
+            raise RuntimeError(
+                "Episode has no S3 output key — the object-storage migration must be "
+                "active and the episode must be built after that migration lands."
+            )
+
         refresh_token = decrypt_token(conn.encrypted_refresh_token)
         creds = GoogleCredentials(
             token=None,
