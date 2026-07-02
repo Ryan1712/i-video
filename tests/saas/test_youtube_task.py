@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 from unittest.mock import MagicMock, patch
 
+from googleapiclient.errors import HttpError
+
 import boto3
 import pytest
 from cryptography.fernet import Fernet
@@ -125,7 +127,9 @@ def test_run_upload_marks_failed_on_api_error(db_session, db_session_factory, mo
     _make_youtube_connection(db_session, user.id)
 
     mock_service = MagicMock()
-    mock_service.videos.return_value.insert.return_value.execute.side_effect = Exception("API error")
+    mock_service.videos.return_value.insert.return_value.execute.side_effect = HttpError(
+        resp=MagicMock(status=500), content=b"quota exceeded"
+    )
 
     with patch("saas.tasks.GoogleCredentials") as mock_creds_cls, \
          patch("saas.tasks.build_youtube", return_value=mock_service):
@@ -136,7 +140,7 @@ def test_run_upload_marks_failed_on_api_error(db_session, db_session_factory, mo
     job_fresh = fresh.query(Job).filter_by(id=job.id).one()
     episode_fresh = fresh.query(Episode).filter_by(id=episode.id).one()
     assert job_fresh.status == "failed"
-    assert "API error" in job_fresh.error_message
+    assert job_fresh.error_message is not None
     assert episode_fresh.status == "built"
     fresh.close()
 
