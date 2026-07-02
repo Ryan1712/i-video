@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.worktrees
+.claude
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+videos/
+frontend/
+docs/
+*.md
