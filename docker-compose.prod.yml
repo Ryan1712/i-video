@@ -36,7 +36,6 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      - "9000:9000"   # S3 API (accessed by API + worker)
       - "9001:9001"   # MinIO console (admin only — restrict in firewall)
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -49,8 +48,6 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-whatif}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whatif}
@@ -93,14 +90,42 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        # At build time: bakes the public API URL into the Next.js bundle.
+        # With nginx routing /api/ → api:8000, set this to https://your-domain.com/api
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is required}
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     depends_on:
       - api
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/app.conf:/etc/nginx/conf.d/app.conf:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+    depends_on:
+      - api
+      - frontend
+    command: >
+      sh -c "nginx -g 'daemon off;'"
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_certs:/etc/letsencrypt
+    # One-shot: run manually for init and renewal.
+    # Init:    docker compose -f docker-compose.prod.yml run --rm certbot certonly ...
+    # Renew:   docker compose -f docker-compose.prod.yml run --rm certbot renew
+    entrypoint: ["sh", "-c", "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done"]
 
 volumes:
   pgdata:
   redisdata:
   miniodata:
+  certbot_www:
+  certbot_certs:
