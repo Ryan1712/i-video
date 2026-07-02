@@ -52,3 +52,47 @@ python -m agent_video upload videos/ep01_what-if-the-moon-disappeared
 3. Unmatched bank transfers show up at `GET /admin/transactions/unmatched`; link one to a pending order with `POST /admin/transactions/{transaction_id}/link/{order_id}`.
 4. Every plan/voucher/transaction/user/setting change and every admin login is written to `audit_logs`; browse it at `GET /admin/audit` (filter by `actor_user_id`, `action`, `from_date`, `to_date`) or export with `GET /admin/audit/export.csv`.
 5. Support widget IDs (Messenger Page ID, Zalo OA ID, Facebook page URL) are set via `PUT /admin/settings/{key}` — the frontend reads `GET /admin/settings` to decide which widgets to render.
+
+## 8. YouTube OAuth Setup (SaaS web flow)
+
+This connects a user's YouTube channel so the API can upload videos on their behalf.
+
+### 8.1 Create a Google Cloud project
+
+1. Go to https://console.cloud.google.com and create a new project (or reuse an existing one).
+2. Under **APIs & Services → Library**, search for **YouTube Data API v3** and click **Enable**.
+
+### 8.2 Create OAuth 2.0 credentials
+
+1. Under **APIs & Services → Credentials**, click **Create Credentials → OAuth client ID**.
+2. Choose **Web application** as the application type.
+3. Under **Authorized redirect URIs**, add the exact value you will set for `GOOGLE_OAUTH_REDIRECT_URI` (e.g. `http://localhost:8000/youtube/callback` for local dev).
+   - This URI must match **exactly** — scheme, host, port, and path — otherwise Google will reject the OAuth callback.
+4. Click **Create**, then copy the **Client ID** and **Client Secret** shown.
+
+### 8.3 Set environment variables
+
+Add the following to your `.env` file (values from step 8.2):
+
+```
+GOOGLE_CLIENT_ID=<your-client-id>
+GOOGLE_CLIENT_SECRET=<your-client-secret>
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8000/youtube/callback
+TOKEN_ENCRYPTION_KEY=<generate-with-command-below>
+```
+
+Generate `TOKEN_ENCRYPTION_KEY` (Fernet symmetric key — run once, keep secret):
+
+```
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+### 8.4 Connect a channel
+
+1. Call `GET /youtube/connect` (authenticated) — returns a Google OAuth URL.
+2. Open that URL in a browser, sign in, and approve access.
+3. Google redirects to `GOOGLE_OAUTH_REDIRECT_URI`; the API exchanges the code for tokens and stores them encrypted.
+4. Verify the connection with `GET /youtube/status`.
+5. To disconnect: `DELETE /youtube/disconnect`.
+
+Once connected, episode upload jobs (`POST /episodes/{id}/upload`) will push the rendered video to YouTube automatically.
