@@ -1,4 +1,6 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// All API calls go through /api/* which Next.js proxies to the FastAPI backend.
+// This keeps requests same-origin, avoiding CORS in both dev and production.
+const BASE_URL = "/api";
 
 export class ApiError extends Error {
   constructor(

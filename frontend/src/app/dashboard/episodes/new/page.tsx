@@ -82,7 +82,7 @@ export default function NewEpisodePage() {
         Create your What If scenario and add scenes.
       </p>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
         {/* Title */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>Title *</label>
