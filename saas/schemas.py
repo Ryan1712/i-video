@@ -21,6 +21,34 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class SeriesIn(BaseModel):
+    name: str
+    description: str = ""
+    style: dict = {}
+
+
+class SeriesOut(BaseModel):
+    id: int
+    name: str
+    description: str
+    style: dict
+    episode_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class SeriesAssetOut(BaseModel):
+    id: int
+    kind: str
+    name: str
+    description: str
+    object_key: str | None
+
+    class Config:
+        from_attributes = True
+
+
 class SceneIn(BaseModel):
     narration_text: str
 
@@ -30,6 +58,7 @@ class SceneOut(BaseModel):
     order_index: int
     narration_text: str
     asset_object_key: str | None
+    asset_brief: str | None = None
 
     class Config:
         from_attributes = True
@@ -40,6 +69,7 @@ class EpisodeIn(BaseModel):
     description: str = ""
     tags: str = ""
     scenes: list[SceneIn] = []
+    series_id: int | None = None
 
 
 class EpisodeOut(BaseModel):
@@ -51,6 +81,7 @@ class EpisodeOut(BaseModel):
     output_object_key: str | None
     youtube_video_id: str | None = None
     scenes: list[SceneOut]
+    series_id: int | None = None
 
     class Config:
         from_attributes = True

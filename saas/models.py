@@ -28,11 +28,42 @@ class SiteSetting(Base):
     value: Mapped[str] = mapped_column(Text, nullable=False)
 
 
+class Series(Base):
+    __tablename__ = "series"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    style: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    assets: Mapped[list["SeriesAsset"]] = relationship(
+        back_populates="series", cascade="all, delete-orphan"
+    )
+    episodes: Mapped[list["Episode"]] = relationship(back_populates="series")
+
+
+class SeriesAsset(Base):
+    __tablename__ = "series_assets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    series_id: Mapped[int] = mapped_column(ForeignKey("series.id"), nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False, default="other")
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="")
+    object_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    series: Mapped["Series"] = relationship(back_populates="assets")
+
+
 class Episode(Base):
     __tablename__ = "episodes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    series_id: Mapped[int | None] = mapped_column(ForeignKey("series.id"), nullable=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="")
     tags: Mapped[str] = mapped_column(String(255), default="")
@@ -44,6 +75,7 @@ class Episode(Base):
     scenes: Mapped[list["Scene"]] = relationship(
         back_populates="episode", order_by="Scene.order_index", cascade="all, delete-orphan"
     )
+    series: Mapped["Series | None"] = relationship(back_populates="episodes")
 
 
 class Scene(Base):
@@ -54,6 +86,7 @@ class Scene(Base):
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     narration_text: Mapped[str] = mapped_column(Text, nullable=False)
     asset_object_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    asset_brief: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, server_default=func.now())
 
     episode: Mapped["Episode"] = relationship(back_populates="scenes")
