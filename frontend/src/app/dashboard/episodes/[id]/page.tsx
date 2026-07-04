@@ -95,8 +95,9 @@ export default function EpisodeDetailPage() {
       const token = localStorage.getItem("access_token");
       const form = new FormData();
       form.append("file", file);
+      // Raw fetch (not the api helper) because FormData must set its own Content-Type.
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/episodes/${id}/scenes/${scene.id}/asset`,
+        `/api/episodes/${id}/scenes/${scene.id}/asset`,
         { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: form },
       );
       if (!res.ok) throw new ApiError(res.status, "Upload failed");
