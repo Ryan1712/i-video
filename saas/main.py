@@ -17,6 +17,7 @@ from .routers import (
     billing,
     episodes,
     jobs,
+    series,
     youtube,
 )
 
@@ -31,6 +32,7 @@ async def validate_youtube_config() -> None:
 app.include_router(auth.router)
 app.include_router(billing.router)
 app.include_router(episodes.router)
+app.include_router(series.router)
 app.include_router(jobs.router)
 app.include_router(admin_plans.router)
 app.include_router(admin_vouchers.router)
