@@ -60,7 +60,6 @@ def test_series_is_owner_scoped(client):
     assert client.get("/series", headers=headers_b).json() == []
 
 
-@pytest.mark.xfail(reason="episode series_id lands in task 3")
 def test_episode_count_reflects_linked_episodes(client):
     headers = _auth(client)
     sid = client.post("/series", json={"name": "S"}, headers=headers).json()["id"]

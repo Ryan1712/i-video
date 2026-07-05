@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ..billing.limits import PlanLimitError, check_episode_limit
 from ..db import get_db
 from ..deps import get_current_user
-from ..models import Episode, Job, Scene, User, YouTubeConnection
+from ..models import Episode, Job, Scene, Series, User, YouTubeConnection
 from ..schemas import AssetUrlOut, EpisodeIn, EpisodeOut, JobOut, OutputUrlOut, SceneOut
 from ..storage import presigned_asset_url, presigned_output_url, save_asset
 from ..tasks import build_episode_task, upload_episode_task
@@ -26,12 +26,18 @@ def create_episode(
     except PlanLimitError as e:
         raise HTTPException(status_code=403, detail=e.code)
 
+    if payload.series_id is not None:
+        series = db.query(Series).filter_by(id=payload.series_id, user_id=current_user.id).one_or_none()
+        if series is None:
+            raise HTTPException(status_code=404, detail="Series not found")
+
     episode = Episode(
         user_id=current_user.id,
         title=payload.title,
         description=payload.description,
         tags=payload.tags,
         status="draft",
+        series_id=payload.series_id,
     )
     for index, scene_in in enumerate(payload.scenes):
         episode.scenes.append(Scene(order_index=index, narration_text=scene_in.narration_text))
@@ -43,9 +49,14 @@ def create_episode(
 
 @router.get("", response_model=list[EpisodeOut])
 def list_episodes(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    series_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[Episode]:
-    return db.query(Episode).filter_by(user_id=current_user.id).all()
+    query = db.query(Episode).filter_by(user_id=current_user.id)
+    if series_id is not None:
+        query = query.filter_by(series_id=series_id)
+    return query.all()
 
 
 def _get_owned_episode_or_404(episode_id: int, db: Session, current_user: User) -> Episode:

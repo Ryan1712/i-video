@@ -315,3 +315,25 @@ def test_trigger_upload_requires_youtube_connected(client, db_session_factory):
 
     assert response.status_code == 409
     assert response.json()["detail"] == "ERR_YOUTUBE_NOT_CONNECTED"
+
+
+def test_create_episode_in_series_and_filter(client):
+    headers = _signup_and_auth_headers(client, email="series-owner@example.com")
+    sid = client.post("/series", json={"name": "S"}, headers=headers).json()["id"]
+
+    ep = client.post("/episodes", json={"title": "EP1", "series_id": sid, "scenes": []}, headers=headers)
+    assert ep.status_code == 201
+    assert ep.json()["series_id"] == sid
+
+    client.post("/episodes", json={"title": "standalone", "scenes": []}, headers=headers)
+    filtered = client.get(f"/episodes?series_id={sid}", headers=headers)
+    assert [e["title"] for e in filtered.json()] == ["EP1"]
+
+
+def test_create_episode_rejects_foreign_series(client):
+    headers_a = _signup_and_auth_headers(client, email="sa@example.com")
+    headers_b = _signup_and_auth_headers(client, email="sb@example.com")
+    sid = client.post("/series", json={"name": "A's"}, headers=headers_a).json()["id"]
+
+    response = client.post("/episodes", json={"title": "X", "series_id": sid, "scenes": []}, headers=headers_b)
+    assert response.status_code == 404
