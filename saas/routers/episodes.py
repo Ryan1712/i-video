@@ -38,6 +38,8 @@ def create_episode(
         tags=payload.tags,
         status="draft",
         series_id=payload.series_id,
+        brief=payload.brief,
+        target_duration_sec=payload.target_duration_sec,
     )
     for index, scene_in in enumerate(payload.scenes):
         episode.scenes.append(Scene(order_index=index, narration_text=scene_in.narration_text))

@@ -44,6 +44,7 @@ class SeriesAssetOut(BaseModel):
     name: str
     description: str
     object_key: str | None
+    source: str = "uploaded"
 
     class Config:
         from_attributes = True
@@ -70,6 +71,8 @@ class EpisodeIn(BaseModel):
     tags: str = ""
     scenes: list[SceneIn] = []
     series_id: int | None = None
+    brief: str = ""
+    target_duration_sec: int | None = None
 
 
 class EpisodeOut(BaseModel):
@@ -82,6 +85,9 @@ class EpisodeOut(BaseModel):
     youtube_video_id: str | None = None
     scenes: list[SceneOut]
     series_id: int | None = None
+    brief: str = ""
+    script: str = ""
+    target_duration_sec: int | None = None
 
     class Config:
         from_attributes = True
