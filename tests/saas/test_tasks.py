@@ -49,7 +49,7 @@ def test_run_build_succeeds_and_updates_episode_and_job(db_session, db_session_f
     fake_output_path = tmp_path / "fake_engine_output.mp4"
     fake_output_path.write_bytes(b"fake-mp4-bytes")
 
-    with patch("saas.tasks.synthesize_scene") as synth_mock, \
+    with patch("saas.tts_providers.synthesize_scene") as synth_mock, \
          patch("saas.tasks.get_audio_duration", return_value=2.5), \
          patch("saas.tasks.build_scene_clip") as clip_mock, \
          patch("saas.tasks.build_episode", return_value=str(fake_output_path)) as build_ep_mock:
@@ -78,7 +78,7 @@ def test_run_build_succeeds_and_updates_episode_and_job(db_session, db_session_f
 def test_run_build_marks_job_failed_on_exception(db_session, db_session_factory, monkeypatch):
     episode_id, job_id = _make_episode_with_one_scene(db_session, monkeypatch)
 
-    with patch("saas.tasks.synthesize_scene", side_effect=RuntimeError("ElevenLabs exploded")):
+    with patch("saas.tts_providers.synthesize_scene", side_effect=RuntimeError("ElevenLabs exploded")):
         run_build(job_id, db_session_factory)
 
     fresh = db_session_factory()

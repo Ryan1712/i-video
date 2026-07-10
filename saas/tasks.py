@@ -14,13 +14,14 @@ from agent_video.config import DEFAULT_CONFIG
 from agent_video.image_builder import build_scene_clip
 from agent_video.script_parser import Episode as EngineEpisode
 from agent_video.script_parser import Scene as EngineScene
-from agent_video.tts import get_audio_duration, synthesize_scene
+from agent_video.tts import get_audio_duration
 from agent_video.video_builder import build_episode
 
 from .celery_app import celery_app
 from .db import init_session_factory
 from .models import Episode, Job, YouTubeConnection
 from .storage import download_to_path, save_output
+from .tts_providers import get_tts_provider
 from .youtube_auth import decrypt_token
 
 
@@ -61,11 +62,13 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             config = DEFAULT_CONFIG
             audio_paths = []
             durations = []
-            api_key = os.environ.get("ELEVENLABS_API_KEY", "")
-            voice_id = os.environ.get("ELEVENLABS_VOICE_ID", "")
+            style = episode.series.style if episode.series else {}
+            tts = get_tts_provider(style.get("tts_provider"))
+            voice = style.get("voice_id", "")
+            language = style.get("language", "en")
             for scene in engine_episode.scenes:
                 audio_path = os.path.join(temp_dir, "audio", f"{scene.name}.mp3")
-                synthesize_scene(scene.text, audio_path, api_key, voice_id)
+                tts.synthesize(scene.text, audio_path, voice=voice, language=language)
                 duration = get_audio_duration(audio_path)
                 audio_paths.append(audio_path)
                 durations.append(duration)
