@@ -66,6 +66,17 @@ def test_gpt_image_provider_raises_on_http_error(monkeypatch):
         GptImageProvider().generate("x")
 
 
+def test_gpt_image_provider_catches_connection_error(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    def fake_post_fails(*a, **k):
+        raise ip.requests.ConnectionError("boom")
+
+    monkeypatch.setattr(ip.requests, "post", fake_post_fails)
+    with pytest.raises(ImageError):
+        GptImageProvider().generate("x")
+
+
 def test_get_image_provider_requires_key(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(ImageError):

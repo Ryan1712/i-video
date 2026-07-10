@@ -18,19 +18,25 @@ class GptImageProvider:
         api_key = os.environ.get("OPENAI_API_KEY", "")
         if not api_key:
             raise ImageError("OPENAI_API_KEY not set")
-        response = requests.post(
-            OPENAI_IMAGES_URL,
-            headers={"Authorization": f"Bearer {api_key}"},
-            json={
-                "model": os.environ.get("IMAGE_MODEL", "gpt-image-1"),
-                "prompt": prompt,
-                "size": os.environ.get("IMAGE_SIZE", "1536x1024"),
-            },
-            timeout=300,
-        )
+        try:
+            response = requests.post(
+                OPENAI_IMAGES_URL,
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={
+                    "model": os.environ.get("IMAGE_MODEL", "gpt-image-1"),
+                    "prompt": prompt,
+                    "size": os.environ.get("IMAGE_SIZE", "1536x1024"),
+                },
+                timeout=300,
+            )
+        except requests.RequestException as e:
+            raise ImageError(f"Image API request failed: {e}")
         if response.status_code != 200:
             raise ImageError(f"Image API failed ({response.status_code}): {response.text[:500]}")
-        data = response.json().get("data") or []
+        try:
+            data = response.json().get("data") or []
+        except ValueError as e:
+            raise ImageError(f"Image API returned malformed JSON: {e}")
         if not data or "b64_json" not in data[0]:
             raise ImageError("Image API returned no image data")
         return base64.b64decode(data[0]["b64_json"])
