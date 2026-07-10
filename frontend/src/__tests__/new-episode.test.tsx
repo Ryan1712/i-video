@@ -5,7 +5,10 @@ import * as apiModule from "@/lib/api";
 import { ApiError } from "@/lib/api";
 
 const mockPush = jest.fn();
-jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockPush }) }));
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 jest.mock("next/link", () => ({ __esModule: true, default: ({ href, children, ...rest }: { href: string; children: React.ReactNode; [k: string]: unknown }) => <a href={href} {...rest}>{children}</a> }));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
@@ -17,11 +20,16 @@ Object.defineProperty(window, "localStorage", {
 
 const mockedApi = jest.mocked(apiModule.api);
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockedApi.get.mockResolvedValue([]);
+});
 
-function setup() {
+async function setup() {
   const user = userEvent.setup();
-  render(<NewEpisodePage />);
+  await act(async () => {
+    render(<NewEpisodePage />);
+  });
   return {
     user,
     titleInput: screen.getByPlaceholderText(/what if the internet/i),
@@ -30,20 +38,20 @@ function setup() {
 }
 
 describe("NewEpisodePage", () => {
-  it("renders title, description, tags, and one default scene", () => {
-    setup();
+  it("renders title, description, tags, and one default scene", async () => {
+    await setup();
     expect(screen.getByPlaceholderText(/what if the internet/i)).toBeInTheDocument();
     expect(screen.getByText(/scenes \(1\)/i)).toBeInTheDocument();
   });
 
   it("adds a scene when 'Add scene' is clicked", async () => {
-    const { user } = setup();
+    const { user } = await setup();
     await user.click(screen.getByRole("button", { name: /add scene/i }));
     expect(screen.getByText(/scenes \(2\)/i)).toBeInTheDocument();
   });
 
   it("removes a scene when remove button is clicked", async () => {
-    const { user } = setup();
+    const { user } = await setup();
     await user.click(screen.getByRole("button", { name: /add scene/i }));
     expect(screen.getByText(/scenes \(2\)/i)).toBeInTheDocument();
 
@@ -57,7 +65,7 @@ describe("NewEpisodePage", () => {
   });
 
   it("shows validation error if a scene has empty narration", async () => {
-    const { user, titleInput } = setup();
+    const { user, titleInput } = await setup();
     await user.type(titleInput, "What If Everything Changed?");
     await user.click(screen.getByRole("button", { name: /create episode/i }));
     await waitFor(() =>
@@ -67,7 +75,7 @@ describe("NewEpisodePage", () => {
 
   it("posts to /episodes and redirects on success", async () => {
     mockedApi.post.mockResolvedValueOnce({ id: 42 });
-    const { user, titleInput } = setup();
+    const { user, titleInput } = await setup();
 
     await user.type(titleInput, "What If Everything Changed?");
     await user.type(screen.getByPlaceholderText(/narration for scene 1/i), "Scene one narration text here.");
@@ -76,6 +84,7 @@ describe("NewEpisodePage", () => {
     await waitFor(() => {
       expect(mockedApi.post).toHaveBeenCalledWith("/episodes", expect.objectContaining({
         title: "What If Everything Changed?",
+        series_id: null,
         scenes: [{ narration_text: "Scene one narration text here." }],
       }));
       expect(mockPush).toHaveBeenCalledWith("/dashboard/episodes/42");
@@ -84,7 +93,7 @@ describe("NewEpisodePage", () => {
 
   it("shows API error message on failure", async () => {
     mockedApi.post.mockRejectedValueOnce(new ApiError(422, "Validation error"));
-    const { user, titleInput } = setup();
+    const { user, titleInput } = await setup();
 
     await user.type(titleInput, "Test Episode");
     await user.type(screen.getByPlaceholderText(/narration for scene 1/i), "Some narration text.");

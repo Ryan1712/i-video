@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 
@@ -10,13 +10,30 @@ interface SceneInput {
 }
 
 export default function NewEpisodePage() {
+  return (
+    <Suspense>
+      <NewEpisodeInner />
+    </Suspense>
+  );
+}
+
+function NewEpisodeInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [seriesList, setSeriesList] = useState<{ id: number; name: string }[]>([]);
+  const [seriesId, setSeriesId] = useState<number | null>(
+    searchParams.get("series") ? Number(searchParams.get("series")) : null
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [scenes, setScenes] = useState<SceneInput[]>([{ narration_text: "" }]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.get<{ id: number; name: string }[]>("/series").then(setSeriesList).catch(() => {});
+  }, []);
 
   function addScene() {
     setScenes((prev) => [...prev, { narration_text: "" }]);
@@ -43,6 +60,7 @@ export default function NewEpisodePage() {
         title,
         description,
         tags,
+        series_id: seriesId,
         scenes: scenes.map((s) => ({ narration_text: s.narration_text })),
       });
       router.push(`/dashboard/episodes/${ep.id}`);
@@ -83,6 +101,19 @@ export default function NewEpisodePage() {
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+        <select
+          className="px-3 py-2 rounded-lg text-sm w-full mb-4"
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#EDEDEF" }}
+          value={seriesId ?? ""}
+          onChange={(e) => setSeriesId(e.target.value ? Number(e.target.value) : null)}
+          aria-label="Series"
+        >
+          <option value="">No series (standalone)</option>
+          {seriesList.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+
         {/* Title */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>Title *</label>

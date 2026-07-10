@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
+import ScriptPanel from "@/components/episode/ScriptPanel";
 
 interface Scene {
   id: number;
   order_index: number;
   narration_text: string;
   asset_object_key: string | null;
+  asset_brief: string | null;
 }
 
 interface Episode {
@@ -21,6 +23,10 @@ interface Episode {
   output_object_key: string | null;
   youtube_video_id: string | null;
   scenes: Scene[];
+  brief: string;
+  script: string;
+  target_duration_sec: number | null;
+  series_id: number | null;
 }
 
 interface Job {
@@ -44,6 +50,7 @@ export default function EpisodeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [uploadingScene, setUploadingScene] = useState<number | null>(null);
+  const [generatingScene, setGeneratingScene] = useState<number | null>(null);
   const [building, setBuilding] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [jobError, setJobError] = useState("");
@@ -106,6 +113,23 @@ export default function EpisodeDetailPage() {
       setJobError(err instanceof ApiError ? err.detail : "Asset upload failed.");
     } finally {
       setUploadingScene(null);
+    }
+  }
+
+  async function handleGenerateAsset(scene: Scene) {
+    setGeneratingScene(scene.id);
+    setJobError("");
+    try {
+      await api.post(`/episodes/${id}/scenes/${scene.id}/generate-asset`, {});
+      await fetchEpisode();
+    } catch (err) {
+      if (err instanceof ApiError && err.detail === "ERR_IMAGE_GENERATION_FAILED") {
+        setJobError("Image generation failed — try again or upload manually.");
+      } else {
+        setJobError(err instanceof ApiError ? err.detail : "Image generation failed.");
+      }
+    } finally {
+      setGeneratingScene(null);
     }
   }
 
@@ -201,6 +225,17 @@ export default function EpisodeDetailPage() {
         </span>
       </div>
 
+      {episode.status === "draft" && (
+        <ScriptPanel
+          episodeId={episode.id}
+          initialBrief={episode.brief}
+          initialDurationSec={episode.target_duration_sec}
+          initialScript={episode.script}
+          disabled={isBusy}
+          onEpisodeUpdated={fetchEpisode}
+        />
+      )}
+
       {/* Scenes */}
       <section className="mb-8">
         <h2 className="text-sm font-semibold mb-3" style={{ color: "#EDEDEF" }}>
@@ -218,7 +253,33 @@ export default function EpisodeDetailPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm mb-3" style={{ color: "#EDEDEF" }}>{scene.narration_text}</p>
+                {!scene.asset_object_key && scene.asset_brief && (
+                  <p className="text-xs mb-2 italic" style={{ color: "#8A8F98" }}>
+                    Missing image: {scene.asset_brief}
+                  </p>
+                )}
                 <div className="flex items-center gap-3">
+                  {!scene.asset_object_key && scene.asset_brief && (
+                    <button
+                      onClick={() => handleGenerateAsset(scene)}
+                      disabled={isBusy || generatingScene !== null}
+                      className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg transition-all"
+                      style={{
+                        background: "rgba(99,102,241,0.12)",
+                        border: "1px solid rgba(99,102,241,0.25)",
+                        color: "#818CF8",
+                        opacity: isBusy ? 0.5 : 1,
+                      }}
+                      title={scene.asset_brief}
+                    >
+                      {generatingScene === scene.id ? (
+                        <div className="w-3 h-3 rounded-full border border-t-transparent animate-spin" style={{ borderColor: "#818CF8", borderTopColor: "transparent" }} />
+                      ) : (
+                        "✨"
+                      )}
+                      Generate image
+                    </button>
+                  )}
                   {scene.asset_object_key ? (
                     <span className="flex items-center gap-1.5 text-xs" style={{ color: "#10B981" }}>
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
