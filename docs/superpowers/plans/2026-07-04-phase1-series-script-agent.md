@@ -1,5 +1,7 @@
 # Phase 1: Series + Script-Analysis Agent Implementation Plan
 
+> **SUPERSEDED (2026-07-10):** Tasks 1-3 are DONE (commits fcbc08..ddd949f). Tasks 4-8 are replaced by `2026-07-10-phase1-ai-brain-ep1.md` following spec v3 (`docs/superpowers/specs/2026-07-10-product-vision-v3-design.md`). Do not execute the remaining tasks in this file.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add Series (project) grouping with shared assets, an LLM endpoint that splits a pasted script into scenes and produces a missing-asset checklist, the frontend for both — then produce real Episode 1 of the zombie series with the app.
