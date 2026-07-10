@@ -38,35 +38,47 @@ async function setup() {
 }
 
 describe("NewEpisodePage", () => {
-  it("renders title, description, tags, and one default scene", async () => {
+  it("renders title, description, tags, and zero scenes by default", async () => {
     await setup();
     expect(screen.getByPlaceholderText(/what if the internet/i)).toBeInTheDocument();
-    expect(screen.getByText(/scenes \(1\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/scenes \(0\)/i)).toBeInTheDocument();
   });
 
   it("adds a scene when 'Add scene' is clicked", async () => {
     const { user } = await setup();
     await user.click(screen.getByRole("button", { name: /add scene/i }));
-    expect(screen.getByText(/scenes \(2\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/scenes \(1\)/i)).toBeInTheDocument();
   });
 
-  it("removes a scene when remove button is clicked", async () => {
+  it("removes a scene when remove button is clicked, including the last one", async () => {
     const { user } = await setup();
     await user.click(screen.getByRole("button", { name: /add scene/i }));
-    expect(screen.getByText(/scenes \(2\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/scenes \(1\)/i)).toBeInTheDocument();
 
-    const removeButtons = screen.getAllByTitle ? [] : [];
     const allButtons = screen.getAllByRole("button");
     const removeBtn = allButtons.find((b) => b.querySelector("svg") && b !== screen.getByRole("button", { name: /create episode/i }) && b !== screen.getByRole("button", { name: /add scene/i }));
+    expect(removeBtn).toBeTruthy();
     if (removeBtn) {
       await user.click(removeBtn);
-      expect(screen.getByText(/scenes \(1\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/scenes \(0\)/i)).toBeInTheDocument();
     }
+  });
+
+  it("allows creating an episode with zero scenes", async () => {
+    const { user, titleInput } = await setup();
+    await user.type(titleInput, "What If Everything Changed?");
+    mockedApi.post.mockResolvedValueOnce({ id: 7 });
+    await user.click(screen.getByRole("button", { name: /create episode/i }));
+    await waitFor(() => {
+      expect(screen.queryByText("All scenes need narration text.")).not.toBeInTheDocument();
+      expect(mockPush).toHaveBeenCalledWith("/dashboard/episodes/7");
+    });
   });
 
   it("shows validation error if a scene has empty narration", async () => {
     const { user, titleInput } = await setup();
     await user.type(titleInput, "What If Everything Changed?");
+    await user.click(screen.getByRole("button", { name: /add scene/i }));
     await user.click(screen.getByRole("button", { name: /create episode/i }));
     await waitFor(() =>
       expect(screen.getByText("All scenes need narration text.")).toBeInTheDocument()
@@ -78,6 +90,24 @@ describe("NewEpisodePage", () => {
     const { user, titleInput } = await setup();
 
     await user.type(titleInput, "What If Everything Changed?");
+    await user.click(screen.getByRole("button", { name: /create episode/i }));
+
+    await waitFor(() => {
+      expect(mockedApi.post).toHaveBeenCalledWith("/episodes", expect.objectContaining({
+        title: "What If Everything Changed?",
+        series_id: null,
+        scenes: [],
+      }));
+      expect(mockPush).toHaveBeenCalledWith("/dashboard/episodes/42");
+    });
+  });
+
+  it("posts scenes when added explicitly", async () => {
+    mockedApi.post.mockResolvedValueOnce({ id: 43 });
+    const { user, titleInput } = await setup();
+
+    await user.type(titleInput, "What If Everything Changed?");
+    await user.click(screen.getByRole("button", { name: /add scene/i }));
     await user.type(screen.getByPlaceholderText(/narration for scene 1/i), "Scene one narration text here.");
     await user.click(screen.getByRole("button", { name: /create episode/i }));
 
@@ -87,7 +117,7 @@ describe("NewEpisodePage", () => {
         series_id: null,
         scenes: [{ narration_text: "Scene one narration text here." }],
       }));
-      expect(mockPush).toHaveBeenCalledWith("/dashboard/episodes/42");
+      expect(mockPush).toHaveBeenCalledWith("/dashboard/episodes/43");
     });
   });
 
@@ -96,7 +126,6 @@ describe("NewEpisodePage", () => {
     const { user, titleInput } = await setup();
 
     await user.type(titleInput, "Test Episode");
-    await user.type(screen.getByPlaceholderText(/narration for scene 1/i), "Some narration text.");
     await user.click(screen.getByRole("button", { name: /create episode/i }));
 
     await waitFor(() =>

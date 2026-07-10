@@ -27,7 +27,7 @@ function NewEpisodeInner() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
-  const [scenes, setScenes] = useState<SceneInput[]>([{ narration_text: "" }]);
+  const [scenes, setScenes] = useState<SceneInput[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -201,20 +201,18 @@ function NewEpisodeInner() {
                   onFocus={(e) => { e.currentTarget.style.border = "1px solid rgba(99,102,241,0.5)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.1)"; }}
                   onBlur={(e) => { e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)"; e.currentTarget.style.boxShadow = "none"; }}
                 />
-                {scenes.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeScene(i)}
-                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-2.5 transition-colors"
-                    style={{ color: "#4A4F5A" }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"; (e.currentTarget as HTMLElement).style.color = "#EF4444"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#4A4F5A"; }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 10l8-8M10 10L2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => removeScene(i)}
+                  className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-2.5 transition-colors"
+                  style={{ color: "#4A4F5A" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.1)"; (e.currentTarget as HTMLElement).style.color = "#EF4444"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#4A4F5A"; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 10l8-8M10 10L2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
               </div>
             ))}
           </div>
