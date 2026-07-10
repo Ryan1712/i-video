@@ -74,6 +74,10 @@ class ScriptOut(BaseModel):
     script: str
 
 
+class AnalyzeScriptIn(BaseModel):
+    script: str
+
+
 class EpisodeIn(BaseModel):
     title: str
     description: str = ""

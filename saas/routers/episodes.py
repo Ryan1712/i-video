@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from ..ai.client import AIError
+from ..ai.script_analysis import analyze_script
 from ..ai.script_generation import generate_script
 from ..billing.limits import PlanLimitError, check_episode_limit
 from ..db import get_db
 from ..deps import get_current_user
-from ..models import Episode, Job, Scene, Series, User, YouTubeConnection
-from ..schemas import AssetUrlOut, EpisodeIn, EpisodeOut, GenerateScriptIn, JobOut, OutputUrlOut, SceneOut, ScriptOut
+from ..models import Episode, Job, Scene, Series, SeriesAsset, User, YouTubeConnection
+from ..schemas import AnalyzeScriptIn, AssetUrlOut, EpisodeIn, EpisodeOut, GenerateScriptIn, JobOut, OutputUrlOut, SceneOut, ScriptOut
 from ..storage import presigned_asset_url, presigned_output_url, save_asset
 from ..tasks import build_episode_task, upload_episode_task
 
@@ -104,6 +105,47 @@ def generate_episode_script(
     episode.script = script
     db.commit()
     return ScriptOut(script=script)
+
+
+@router.post("/{episode_id}/analyze-script", response_model=EpisodeOut)
+def analyze_episode_script(
+    episode_id: int,
+    payload: AnalyzeScriptIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Episode:
+    episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    if episode.status != "draft":
+        raise HTTPException(status_code=409, detail="ERR_EPISODE_NOT_DRAFT")
+
+    series = episode.series
+    style = series.style if series else {}
+    assets = series.assets if series else []
+    catalog = [
+        {"id": a.id, "kind": a.kind, "name": a.name, "description": a.description}
+        for a in assets
+    ]
+    try:
+        analyzed = analyze_script(payload.script, style.get("language", "en"), catalog)
+    except AIError:
+        raise HTTPException(status_code=502, detail="ERR_SCRIPT_ANALYSIS_FAILED")
+
+    assets_by_id = {a.id: a for a in assets}
+    episode.script = payload.script
+    episode.scenes.clear()
+    for index, item in enumerate(analyzed):
+        matched = assets_by_id.get(item["asset_id"]) if item["asset_id"] else None
+        episode.scenes.append(
+            Scene(
+                order_index=index,
+                narration_text=item["narration_text"],
+                asset_object_key=matched.object_key if matched else None,
+                asset_brief=item["asset_brief"],
+            )
+        )
+    db.commit()
+    db.refresh(episode)
+    return episode
 
 
 @router.post("/{episode_id}/scenes/{scene_id}/asset", response_model=SceneOut)
