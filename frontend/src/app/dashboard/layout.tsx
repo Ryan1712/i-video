@@ -7,6 +7,16 @@ import { getToken, logout } from "@/lib/auth";
 
 const NAV = [
   {
+    href: "/dashboard/series",
+    label: "Series",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="5" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+        <path d="M4 5V3.5A1.5 1.5 0 015.5 2h5A1.5 1.5 0 0112 3.5V5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      </svg>
+    ),
+  },
+  {
     href: "/dashboard",
     label: "Episodes",
     icon: (
