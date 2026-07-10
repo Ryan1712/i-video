@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import os
 
 import requests
@@ -39,7 +40,10 @@ class GptImageProvider:
             raise ImageError(f"Image API returned malformed JSON: {e}")
         if not data or "b64_json" not in data[0]:
             raise ImageError("Image API returned no image data")
-        return base64.b64decode(data[0]["b64_json"])
+        try:
+            return base64.b64decode(data[0]["b64_json"], validate=True)
+        except (binascii.Error, ValueError) as e:
+            raise ImageError(f"Image API returned malformed base64: {e}")
 
 
 def get_image_provider() -> GptImageProvider:

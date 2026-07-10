@@ -65,6 +65,12 @@ def test_analyze_script_rejects_empty_scenes(monkeypatch):
         sa.analyze_script("s", "en", [])
 
 
+def test_analyze_script_rejects_non_object_scene_entry(monkeypatch):
+    monkeypatch.setattr(sa, "generate_json", lambda *a, **k: {"scenes": ["just a string"]})
+    with pytest.raises(AIError):
+        sa.analyze_script("s", "en", [])
+
+
 def _episode_with_series(client, headers):
     sid = client.post("/series", json={"name": "S"}, headers=headers).json()["id"]
     ep_id = client.post(

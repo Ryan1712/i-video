@@ -29,17 +29,24 @@ def _extract_json(text: str) -> dict:
 
 
 def generate_json(system: str, user_message: str, max_tokens: int = 8192) -> dict:
+    import anthropic
+
     client = _client()
     message = user_message
     last_error = None
     for _ in range(2):
-        response = client.messages.create(
-            model=_model(),
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": message}],
-        )
-        text = response.content[0].text
+        try:
+            response = client.messages.create(
+                model=_model(),
+                max_tokens=max_tokens,
+                system=system,
+                messages=[{"role": "user", "content": message}],
+            )
+            text = response.content[0].text
+        except anthropic.APIError as e:
+            raise AIError(f"Anthropic API call failed: {e}") from e
+        except (IndexError, AttributeError) as e:
+            raise AIError(f"Anthropic API returned a malformed response: {e}") from e
         try:
             return _extract_json(text)
         except (json.JSONDecodeError, IndexError) as e:

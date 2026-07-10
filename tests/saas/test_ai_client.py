@@ -1,3 +1,4 @@
+import anthropic
 import pytest
 
 import saas.ai.client as ai_client
@@ -65,3 +66,36 @@ def test_default_model(monkeypatch):
     monkeypatch.setattr(ai_client, "_client", lambda: fake)
     generate_json("sys", "user")
     assert fake.messages.calls[0]["model"] == "claude-sonnet-5"
+
+
+class FakeMessagesRaisesAPIError:
+    def create(self, **kwargs):
+        raise anthropic.APIConnectionError(request=None)
+
+
+class FakeAnthropicAPIError:
+    def __init__(self):
+        self.messages = FakeMessagesRaisesAPIError()
+
+
+def test_sdk_api_error_becomes_aierror(monkeypatch):
+    monkeypatch.setattr(ai_client, "_client", lambda: FakeAnthropicAPIError())
+    with pytest.raises(AIError):
+        generate_json("sys", "user")
+
+
+def test_empty_content_becomes_aierror(monkeypatch):
+    class FakeEmptyResponse:
+        content = []
+
+    class FakeMessagesEmptyContent:
+        def create(self, **kwargs):
+            return FakeEmptyResponse()
+
+    class FakeAnthropicEmptyContent:
+        def __init__(self):
+            self.messages = FakeMessagesEmptyContent()
+
+    monkeypatch.setattr(ai_client, "_client", lambda: FakeAnthropicEmptyContent())
+    with pytest.raises(AIError):
+        generate_json("sys", "user")

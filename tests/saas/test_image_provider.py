@@ -57,6 +57,17 @@ def test_gpt_image_provider_decodes_b64(monkeypatch):
     assert captured["json"]["prompt"] == "a hero"
 
 
+def test_gpt_image_provider_raises_on_malformed_base64(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(
+        ip.requests,
+        "post",
+        lambda *a, **k: FakeHttpResponse(200, {"data": [{"b64_json": "!!!not-base64!!!"}]}),
+    )
+    with pytest.raises(ImageError):
+        GptImageProvider().generate("x")
+
+
 def test_gpt_image_provider_raises_on_http_error(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     monkeypatch.setattr(

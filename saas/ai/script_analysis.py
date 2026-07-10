@@ -33,6 +33,8 @@ def analyze_script(script: str, language: str, asset_catalog: list[dict]) -> lis
     valid_ids = {a["id"] for a in asset_catalog}
     scenes: list[dict] = []
     for raw in raw_scenes:
+        if not isinstance(raw, dict):
+            raise AIError("Scene entry is not an object")
         narration = raw.get("narration_text")
         if not isinstance(narration, str) or not narration.strip():
             raise AIError("Scene missing narration_text")
