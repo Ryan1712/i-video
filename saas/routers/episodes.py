@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from ..ai.client import AIError
+from ..ai.image_provider import ImageError, get_image_provider
 from ..ai.script_analysis import analyze_script
 from ..ai.script_generation import generate_script
 from ..billing.limits import PlanLimitError, check_episode_limit
@@ -12,7 +13,7 @@ from ..db import get_db
 from ..deps import get_current_user
 from ..models import Episode, Job, Scene, Series, SeriesAsset, User, YouTubeConnection
 from ..schemas import AnalyzeScriptIn, AssetUrlOut, EpisodeIn, EpisodeOut, GenerateScriptIn, JobOut, OutputUrlOut, SceneOut, ScriptOut
-from ..storage import presigned_asset_url, presigned_output_url, save_asset
+from ..storage import presigned_asset_url, presigned_output_url, save_asset, save_series_asset
 from ..tasks import build_episode_task, upload_episode_task
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
@@ -164,6 +165,44 @@ async def upload_scene_asset(
     content = await file.read()
     key = save_asset(episode_id, scene_id, file.filename, content)
     scene.asset_object_key = key
+    db.commit()
+    return scene
+
+
+@router.post("/{episode_id}/scenes/{scene_id}/generate-asset", response_model=SceneOut)
+def generate_scene_asset(
+    episode_id: int,
+    scene_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Scene:
+    episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    scene = next((s for s in episode.scenes if s.id == scene_id), None)
+    if scene is None:
+        raise HTTPException(status_code=404, detail="Scene not found")
+    if episode.series is None:
+        raise HTTPException(status_code=400, detail="ERR_NO_SERIES")
+    if not scene.asset_brief:
+        raise HTTPException(status_code=400, detail="ERR_NO_ASSET_BRIEF")
+
+    style_bible = episode.series.style.get("image_style_bible", "")
+    prompt = scene.asset_brief if not style_bible else f"{scene.asset_brief}\n\nStyle: {style_bible}"
+    try:
+        content = get_image_provider().generate(prompt)
+    except ImageError:
+        raise HTTPException(status_code=502, detail="ERR_IMAGE_GENERATION_FAILED")
+
+    asset = SeriesAsset(
+        series_id=episode.series.id,
+        kind="other",
+        name=f"ep{episode.id}-scene{scene.order_index + 1}",
+        description=scene.asset_brief,
+        source="generated",
+    )
+    db.add(asset)
+    db.flush()  # allocate asset.id for the object key
+    asset.object_key = save_series_asset(episode.series.id, asset.id, "generated.png", content)
+    scene.asset_object_key = asset.object_key
     db.commit()
     return scene
 
