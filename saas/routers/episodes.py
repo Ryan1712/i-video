@@ -4,11 +4,13 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from ..ai.client import AIError
+from ..ai.script_generation import generate_script
 from ..billing.limits import PlanLimitError, check_episode_limit
 from ..db import get_db
 from ..deps import get_current_user
 from ..models import Episode, Job, Scene, Series, User, YouTubeConnection
-from ..schemas import AssetUrlOut, EpisodeIn, EpisodeOut, JobOut, OutputUrlOut, SceneOut
+from ..schemas import AssetUrlOut, EpisodeIn, EpisodeOut, GenerateScriptIn, JobOut, OutputUrlOut, SceneOut, ScriptOut
 from ..storage import presigned_asset_url, presigned_output_url, save_asset
 from ..tasks import build_episode_task, upload_episode_task
 
@@ -75,6 +77,33 @@ def get_episode(
     current_user: User = Depends(get_current_user),
 ) -> Episode:
     return _get_owned_episode_or_404(episode_id, db, current_user)
+
+
+@router.post("/{episode_id}/generate-script", response_model=ScriptOut)
+def generate_episode_script(
+    episode_id: int,
+    payload: GenerateScriptIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ScriptOut:
+    episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    style = episode.series.style if episode.series else {}
+    try:
+        script = generate_script(
+            brief=payload.brief,
+            target_duration_sec=payload.target_duration_sec,
+            language=style.get("language", "en"),
+            series_name=episode.series.name if episode.series else "",
+            series_description=episode.series.description if episode.series else "",
+        )
+    except AIError:
+        raise HTTPException(status_code=502, detail="ERR_SCRIPT_GENERATION_FAILED")
+
+    episode.brief = payload.brief
+    episode.target_duration_sec = payload.target_duration_sec
+    episode.script = script
+    db.commit()
+    return ScriptOut(script=script)
 
 
 @router.post("/{episode_id}/scenes/{scene_id}/asset", response_model=SceneOut)

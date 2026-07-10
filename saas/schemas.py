@@ -65,6 +65,15 @@ class SceneOut(BaseModel):
         from_attributes = True
 
 
+class GenerateScriptIn(BaseModel):
+    brief: str
+    target_duration_sec: int
+
+
+class ScriptOut(BaseModel):
+    script: str
+
+
 class EpisodeIn(BaseModel):
     title: str
     description: str = ""
