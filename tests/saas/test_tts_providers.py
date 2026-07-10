@@ -64,3 +64,28 @@ def test_azure_builds_ssml_and_writes_file(monkeypatch, tmp_path):
     assert "southeastasia" in captured["url"]
     assert "vi-VN-HoaiMyNeural" in captured["data"].decode()
     assert "xin ch" in captured["data"].decode()
+
+
+def test_azure_escapes_voice_in_ssml(monkeypatch, tmp_path):
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+        content = b"mp3-bytes"
+        text = ""
+
+    def fake_post(url, headers=None, data=None, timeout=None):
+        captured["data"] = data
+        return FakeResponse()
+
+    monkeypatch.setattr(tp.requests, "post", fake_post)
+    monkeypatch.setenv("AZURE_SPEECH_KEY", "az-key")
+    monkeypatch.setenv("AZURE_SPEECH_REGION", "southeastasia")
+
+    out = tmp_path / "a.mp3"
+    malicious_voice = "vi-VN' /><evil x='"
+    AzureTTS().synthesize("hello", str(out), voice=malicious_voice, language="vi")
+
+    ssml = captured["data"].decode()
+    assert "&apos;" in ssml
+    assert "' /><evil x='" not in ssml

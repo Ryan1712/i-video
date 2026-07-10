@@ -28,9 +28,10 @@ class AzureTTS:
         if not key or not region:
             raise TTSError("AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set")
         lang_tag = {"vi": "vi-VN", "en": "en-US"}.get(language, "en-US")
+        voice_attr = escape(voice, {"'": "&apos;"})
         ssml = (
             f"<speak version='1.0' xml:lang='{lang_tag}'>"
-            f"<voice name='{voice}'>{escape(text)}</voice></speak>"
+            f"<voice name='{voice_attr}'>{escape(text)}</voice></speak>"
         )
         response = requests.post(
             AZURE_TTS_URL.format(region=region),
