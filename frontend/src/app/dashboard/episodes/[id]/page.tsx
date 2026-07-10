@@ -44,6 +44,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   uploaded:  { label: "Published", color: "#10B981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)" },
 };
 
+const GENERATE_ASSET_ERRORS: Record<string, string> = {
+  ERR_IMAGE_GENERATION_FAILED: "Image generation failed — try again or upload manually.",
+  ERR_NO_SERIES: "This episode has no series — link it to a series to generate images.",
+  ERR_NO_ASSET_BRIEF: "This scene has no missing-image description to generate from.",
+};
+
 export default function EpisodeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [episode, setEpisode] = useState<Episode | null>(null);
@@ -123,10 +129,10 @@ export default function EpisodeDetailPage() {
       await api.post(`/episodes/${id}/scenes/${scene.id}/generate-asset`, {});
       await fetchEpisode();
     } catch (err) {
-      if (err instanceof ApiError && err.detail === "ERR_IMAGE_GENERATION_FAILED") {
-        setJobError("Image generation failed — try again or upload manually.");
+      if (err instanceof ApiError) {
+        setJobError(GENERATE_ASSET_ERRORS[err.detail] ?? err.detail);
       } else {
-        setJobError(err instanceof ApiError ? err.detail : "Image generation failed.");
+        setJobError("Image generation failed.");
       }
     } finally {
       setGeneratingScene(null);
