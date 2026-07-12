@@ -44,10 +44,14 @@ def generate_json(system: str, user_message: str, max_tokens: int = 8192) -> dic
                 system=system,
                 messages=[{"role": "user", "content": message}],
             )
-            text = response.content[0].text
+            text = next(
+                block.text
+                for block in response.content
+                if getattr(block, "type", "") == "text"
+            )
         except anthropic.APIError as e:
             raise AIError(f"Anthropic API call failed: {e}") from e
-        except (IndexError, AttributeError) as e:
+        except (StopIteration, IndexError, AttributeError) as e:
             raise AIError(f"Anthropic API returned a malformed response: {e}") from e
         try:
             return _extract_json(text)

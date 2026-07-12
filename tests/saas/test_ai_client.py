@@ -7,7 +7,13 @@ from saas.ai.client import AIError, generate_json
 
 class FakeContent:
     def __init__(self, text):
+        self.type = "text"
         self.text = text
+
+
+class FakeThinkingBlock:
+    type = "thinking"
+    thinking = "internal reasoning..."  # no .text attribute, like the real SDK block
 
 
 class FakeResponse:
@@ -97,6 +103,39 @@ def test_empty_content_becomes_aierror(monkeypatch):
             self.messages = FakeMessagesEmptyContent()
 
     monkeypatch.setattr(ai_client, "_client", lambda: FakeAnthropicEmptyContent())
+    with pytest.raises(AIError):
+        generate_json("sys", "user")
+
+
+def test_skips_thinking_block_and_reads_text_block(monkeypatch):
+    class FakeThinkingResponse:
+        content = [FakeThinkingBlock(), FakeContent('{"ok": 1}')]
+
+    class FakeMessagesThinking:
+        def create(self, **kwargs):
+            return FakeThinkingResponse()
+
+    class FakeAnthropicThinking:
+        def __init__(self):
+            self.messages = FakeMessagesThinking()
+
+    monkeypatch.setattr(ai_client, "_client", lambda: FakeAnthropicThinking())
+    assert generate_json("sys", "user") == {"ok": 1}
+
+
+def test_only_thinking_blocks_becomes_aierror(monkeypatch):
+    class FakeOnlyThinkingResponse:
+        content = [FakeThinkingBlock()]
+
+    class FakeMessagesOnlyThinking:
+        def create(self, **kwargs):
+            return FakeOnlyThinkingResponse()
+
+    class FakeAnthropicOnlyThinking:
+        def __init__(self):
+            self.messages = FakeMessagesOnlyThinking()
+
+    monkeypatch.setattr(ai_client, "_client", lambda: FakeAnthropicOnlyThinking())
     with pytest.raises(AIError):
         generate_json("sys", "user")
 
