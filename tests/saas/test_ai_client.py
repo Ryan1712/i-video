@@ -99,3 +99,9 @@ def test_empty_content_becomes_aierror(monkeypatch):
     monkeypatch.setattr(ai_client, "_client", lambda: FakeAnthropicEmptyContent())
     with pytest.raises(AIError):
         generate_json("sys", "user")
+
+
+def test_missing_api_key_raises_aierror(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with pytest.raises(AIError, match="ANTHROPIC_API_KEY not set"):
+        generate_json("sys", "user")

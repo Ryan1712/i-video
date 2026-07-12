@@ -12,6 +12,8 @@ class AIError(RuntimeError):
 def _client():
     import anthropic
 
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise AIError("ANTHROPIC_API_KEY not set")
     return anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
 
