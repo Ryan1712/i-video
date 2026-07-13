@@ -118,6 +118,7 @@ class JobOut(BaseModel):
     id: int
     status: str
     progress_pct: int
+    stage: str | None = None
     error_message: str | None
 
     class Config:

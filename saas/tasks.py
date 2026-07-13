@@ -66,7 +66,11 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             tts = get_tts_provider(style.get("tts_provider"))
             voice = style.get("voice_id", "")
             language = style.get("language", "en")
-            for scene in engine_episode.scenes:
+            total = len(engine_episode.scenes)
+            for index, scene in enumerate(engine_episode.scenes):
+                job.stage = f"tts {index + 1}/{total}"
+                job.progress_pct = int((index + 1) / total * 50)
+                db.commit()
                 audio_path = os.path.join(temp_dir, "audio", f"{scene.name}.mp3")
                 tts.synthesize(scene.text, audio_path, voice=voice, language=language)
                 duration = get_audio_duration(audio_path)
@@ -75,17 +79,24 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
 
             clip_paths = []
             tmp_clip_dir = os.path.join(temp_dir, "output", "_tmp")
-            for scene, duration in zip(engine_episode.scenes, durations):
+            for index, (scene, duration) in enumerate(zip(engine_episode.scenes, durations)):
+                job.stage = f"render {index + 1}/{total}"
+                job.progress_pct = 50 + int((index + 1) / total * 40)
+                db.commit()
                 clip_path = os.path.join(temp_dir, "output", f"_clip_{scene.name}.mp4")
                 build_scene_clip(scene.asset, duration, clip_path, tmp_clip_dir, config)
                 clip_paths.append(clip_path)
 
+            job.stage = "assemble"
+            job.progress_pct = 95
+            db.commit()
             out_path = build_episode(engine_episode, clip_paths, audio_paths, durations, temp_dir, config)
 
             output_key = save_output(episode.id, out_path)
             episode.output_object_key = output_key
             episode.status = "built"
             job.status = "done"
+            job.stage = None
             job.progress_pct = 100
             db.commit()
         finally:

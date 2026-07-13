@@ -221,6 +221,24 @@ def get_scene_asset_url(
     return AssetUrlOut(url=presigned_asset_url(scene.asset_object_key))
 
 
+@router.get("/{episode_id}/jobs/latest", response_model=JobOut)
+def get_latest_job(
+    episode_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Job:
+    episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    job = (
+        db.query(Job)
+        .filter_by(episode_id=episode.id)
+        .order_by(Job.id.desc())
+        .first()
+    )
+    if job is None:
+        raise HTTPException(status_code=404, detail="No jobs for this episode")
+    return job
+
+
 @router.get("/{episode_id}/output-url", response_model=OutputUrlOut)
 def get_output_url(
     episode_id: int,

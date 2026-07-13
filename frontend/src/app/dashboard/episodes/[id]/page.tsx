@@ -33,7 +33,17 @@ interface Job {
   id: number;
   status: string;
   progress_pct: number;
+  stage: string | null;
   error_message: string | null;
+}
+
+function stageLabel(stage: string | null): string {
+  if (!stage) return "Working…";
+  const [phase, count] = stage.split(" ");
+  if (phase === "tts") return `Voice-over ${count ?? ""}`;
+  if (phase === "render") return `Rendering scenes ${count ?? ""}`;
+  if (phase === "assemble") return "Assembling final video…";
+  return stage;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -61,12 +71,17 @@ export default function EpisodeDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [jobError, setJobError] = useState("");
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
+  const [latestJob, setLatestJob] = useState<Job | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchEpisode = useCallback(async () => {
     try {
       const ep = await api.get<Episode>(`/episodes/${id}`);
       setEpisode(ep);
+
+      try {
+        setLatestJob(await api.get<Job>(`/episodes/${id}/jobs/latest`));
+      } catch {} // 404 = no jobs yet
 
       if (ep.status === "built" && ep.output_object_key && !outputUrl) {
         try {
@@ -140,6 +155,15 @@ export default function EpisodeDetailPage() {
   }
 
   async function handleBuild() {
+    if (
+      episode &&
+      (episode.status === "built" || episode.status === "uploaded") &&
+      !window.confirm(
+        "This episode is already built. Rebuilding re-runs voice-over for every scene and costs TTS credits. Continue?"
+      )
+    ) {
+      return;
+    }
     setJobError("");
     setBuilding(true);
     try {
@@ -346,19 +370,36 @@ export default function EpisodeDetailPage() {
         {episode.status === "building" && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#8A8F98" }}>
-              <span>Building…</span>
+              <span>{stageLabel(latestJob?.stage ?? null)}</span>
+              <span>{latestJob ? `${latestJob.progress_pct}%` : ""}</span>
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
-                  width: "100%",
+                  width: `${Math.max(latestJob?.progress_pct ?? 0, 3)}%`,
                   background: "linear-gradient(90deg, #6366F1, #818CF8)",
                   animation: "shimmer 1.5s linear infinite",
                   backgroundSize: "200% 100%",
                 }}
               />
             </div>
+          </div>
+        )}
+
+        {latestJob?.status === "failed" && episode.status !== "building" && (
+          <div
+            className="mb-4 px-4 py-3 rounded-xl text-sm flex items-center justify-between gap-4"
+            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#FCA5A5" }}
+          >
+            <span>Last build failed: {latestJob.error_message || "unknown error"}</span>
+            <button
+              onClick={handleBuild}
+              className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg"
+              style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)", color: "#FCA5A5" }}
+            >
+              Retry build
+            </button>
           </div>
         )}
 
