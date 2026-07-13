@@ -1,5 +1,7 @@
 "use client";
 
+import Logo from "@/components/Logo";
+
 export default function Footer() {
   const links = {
     Product: ["Features", "Pricing", "Changelog", "Roadmap"],
@@ -19,22 +21,8 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white"
-                style={{
-                  background: "linear-gradient(135deg, #6366F1, #818CF8)",
-                  boxShadow: "0 0 16px rgba(99,102,241,0.4)",
-                }}
-              >
-                W
-              </div>
-              <span
-                className="font-semibold text-sm"
-                style={{ color: "#EDEDEF" }}
-              >
-                What If<span style={{ color: "#818CF8" }}>?</span>
-              </span>
+            <div className="mb-4">
+              <Logo size={32} />
             </div>
             <p className="text-sm leading-relaxed" style={{ color: "#4A4F5A" }}>
               AI-powered video podcast platform. Turn any hypothetical into a cinematic episode.

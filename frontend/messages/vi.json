@@ -4,7 +4,13 @@
     "login": "Đăng nhập",
     "signup": "Đăng ký",
     "logout": "Đăng xuất",
-    "loading": "Đang tải…"
+    "loading": "Đang tải…",
+    "nav": {
+      "series": "Series",
+      "episodes": "Tập video",
+      "youtube": "YouTube",
+      "billing": "Thanh toán"
+    }
   },
   "auth": {
     "loginTitle": "Chào mừng trở lại",

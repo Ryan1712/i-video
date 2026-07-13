@@ -4,7 +4,13 @@
     "login": "Log in",
     "signup": "Sign up",
     "logout": "Sign out",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "nav": {
+      "series": "Series",
+      "episodes": "Episodes",
+      "youtube": "YouTube",
+      "billing": "Billing"
+    }
   },
   "auth": {
     "loginTitle": "Welcome back",

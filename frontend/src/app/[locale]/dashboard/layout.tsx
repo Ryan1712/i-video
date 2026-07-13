@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { getToken, logout } from "@/lib/auth";
+import Logo from "@/components/Logo";
 
-const NAV = [
+const NAV_KEYS = [
   {
     href: "/dashboard/series",
-    label: "Series",
+    labelKey: "nav.series",
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="5" width="12" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
@@ -17,7 +19,7 @@ const NAV = [
   },
   {
     href: "/dashboard",
-    label: "Episodes",
+    labelKey: "nav.episodes",
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <rect x="2" y="3" width="12" height="2" rx="1" fill="currentColor" />
@@ -28,7 +30,7 @@ const NAV = [
   },
   {
     href: "/dashboard/youtube",
-    label: "YouTube",
+    labelKey: "nav.youtube",
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path
@@ -40,7 +42,7 @@ const NAV = [
   },
   {
     href: "/dashboard/billing",
-    label: "Billing",
+    labelKey: "nav.billing",
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <rect x="1" y="4" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
@@ -51,6 +53,7 @@ const NAV = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
@@ -91,24 +94,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}
       >
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 px-5 mb-8">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-            style={{
-              background: "linear-gradient(135deg, #6366F1, #818CF8)",
-              boxShadow: "0 0 14px rgba(99,102,241,0.35)",
-            }}
-          >
-            W
-          </div>
-          <span className="font-semibold text-sm" style={{ color: "#EDEDEF" }}>
-            What If<span style={{ color: "#818CF8" }}>?</span>
-          </span>
+        <Link href="/" className="px-5 mb-8">
+          <Logo size={32} />
         </Link>
 
         {/* Nav */}
         <nav className="flex-1 flex flex-col gap-1 px-3">
-          {NAV.map((item) => {
+          {NAV_KEYS.map((item) => {
             const active =
               item.href === "/dashboard"
                 ? pathname === "/dashboard"
@@ -127,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }}
               >
                 {item.icon}
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -157,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 strokeLinejoin="round"
               />
             </svg>
-            Sign out
+            {t("logout")}
           </button>
         </div>
       </aside>
