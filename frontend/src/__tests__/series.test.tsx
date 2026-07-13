@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import SeriesPage from "@/app/dashboard/series/page";
+import SeriesPage from "@/app/[locale]/dashboard/series/page";
 import * as apiModule from "@/lib/api";
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));

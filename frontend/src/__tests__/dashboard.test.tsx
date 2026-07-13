@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import DashboardPage from "@/app/dashboard/page";
+import DashboardPage from "@/app/[locale]/dashboard/page";
 import * as apiModule from "@/lib/api";
 import { ApiError } from "@/lib/api";
 

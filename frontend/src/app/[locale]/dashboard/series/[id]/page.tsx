@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api";
 
 interface Series {

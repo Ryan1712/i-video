@@ -1,12 +1,14 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import SignupPage from "@/app/(auth)/signup/page";
+import SignupPage from "@/app/[locale]/(auth)/signup/page";
 import * as auth from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 
 const mockPush = jest.fn();
-jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockPush }) }));
-jest.mock("next/link", () => ({ __esModule: true, default: ({ href, children, ...rest }: { href: string; children: React.ReactNode; [k: string]: unknown }) => <a href={href} {...rest}>{children}</a> }));
+jest.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode; [k: string]: unknown }) => <a href={href} {...rest}>{children}</a>,
+}));
 jest.mock("@/lib/auth");
 
 const mockedSignup = jest.mocked(auth.signup);

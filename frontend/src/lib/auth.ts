@@ -30,5 +30,7 @@ export async function signup(email: string, password: string): Promise<void> {
 
 export function logout() {
   clearToken();
+  // Middleware rewrites this to /<defaultLocale>/login; acceptable to lose
+  // the active locale on logout (Wave 2 may read the cookie instead).
   window.location.href = "/login";
 }

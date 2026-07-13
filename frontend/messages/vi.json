@@ -1,0 +1,19 @@
+{
+  "common": {
+    "appName": "Narro",
+    "login": "Đăng nhập",
+    "signup": "Đăng ký",
+    "logout": "Đăng xuất",
+    "loading": "Đang tải…"
+  },
+  "auth": {
+    "loginTitle": "Chào mừng trở lại",
+    "signupTitle": "Tạo tài khoản",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "loginButton": "Đăng nhập",
+    "signupButton": "Tạo tài khoản",
+    "haveAccount": "Đã có tài khoản?",
+    "noAccount": "Chưa có tài khoản?"
+  }
+}

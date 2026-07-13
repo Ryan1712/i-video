@@ -1,15 +1,17 @@
 import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import NewEpisodePage from "@/app/dashboard/episodes/new/page";
+import NewEpisodePage from "@/app/[locale]/dashboard/episodes/new/page";
 import * as apiModule from "@/lib/api";
 import { ApiError } from "@/lib/api";
 
 const mockPush = jest.fn();
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
   useSearchParams: () => new URLSearchParams(),
 }));
-jest.mock("next/link", () => ({ __esModule: true, default: ({ href, children, ...rest }: { href: string; children: React.ReactNode; [k: string]: unknown }) => <a href={href} {...rest}>{children}</a> }));
+jest.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode; [k: string]: unknown }) => <a href={href} {...rest}>{children}</a>,
+}));
 jest.mock("@/lib/api", () => ({
   ...jest.requireActual("@/lib/api"),
   api: { get: jest.fn(), post: jest.fn(), delete: jest.fn() },

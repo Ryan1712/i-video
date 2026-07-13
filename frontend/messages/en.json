@@ -1,0 +1,19 @@
+{
+  "common": {
+    "appName": "Narro",
+    "login": "Log in",
+    "signup": "Sign up",
+    "logout": "Sign out",
+    "loading": "Loading…"
+  },
+  "auth": {
+    "loginTitle": "Welcome back",
+    "signupTitle": "Create your account",
+    "email": "Email",
+    "password": "Password",
+    "loginButton": "Log in",
+    "signupButton": "Create account",
+    "haveAccount": "Already have an account?",
+    "noAccount": "No account yet?"
+  }
+}
