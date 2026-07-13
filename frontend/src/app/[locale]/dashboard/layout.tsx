@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { getToken, logout } from "@/lib/auth";
 import Logo from "@/components/Logo";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 const NAV_KEYS = [
   {
@@ -125,8 +126,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
+        {/* Locale Switcher */}
+        <div className="px-3 mb-4">
+          <LocaleSwitcher />
+        </div>
+
         {/* Sign out */}
-        <div className="px-3 mt-4">
+        <div className="px-3">
           <button
             onClick={logout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm w-full transition-all duration-150"

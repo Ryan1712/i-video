@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "@/i18n/navigation";
 import Logo from "@/components/Logo";
+import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -55,6 +56,7 @@ export default function Nav() {
 
         {/* CTAs */}
         <div className="flex items-center gap-3">
+          <LocaleSwitcher />
           <Link
             href="/login"
             className="hidden md:block text-sm transition-colors duration-200"
