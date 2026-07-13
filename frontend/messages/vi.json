@@ -23,7 +23,7 @@
     "noAccount": "Chưa có tài khoản?"
   },
   "landing": {
-    "nav": { "features": "Tính năng", "how": "Cách hoạt động", "pricing": "Bảng giá", "cta": "Bắt đầu" },
+    "nav": { "features": "Tính năng", "how": "Cách hoạt động", "pricing": "Bảng giá", "cta": "Bắt đầu", "login": "Đăng nhập" },
     "hero": {
       "badge": "Agent AI làm video cho người kể chuyện",
       "title": "Biến một ý tưởng thành cả series video",
@@ -35,7 +35,20 @@
         { "value": "34/37", "label": "cảnh tự khớp ảnh có sẵn" },
         { "value": "VI + EN", "label": "ngôn ngữ giọng đọc" }
       ],
-      "statsNote": "từ tập thí điểm của chúng tôi"
+      "statsNote": "từ tập thí điểm của chúng tôi",
+      "mockup": {
+        "episodesLabel": "Tập video",
+        "episodeTitle4": "Tập 4: Tín hiệu",
+        "episodeTitle3": "Tập 3: Tối sâu",
+        "episodeTitle2": "Tập 2: Lần tiếp xúc đầu tiên",
+        "published": "Đã đăng",
+        "youtubeLabel": "YouTube",
+        "sceneTitle1": "Kết nối cuối cùng",
+        "sceneTitle2": "Các thành phố im lặng",
+        "sceneTitle3": "Kế hoạch phục hồi",
+        "sceneTitle4": "Thời đại internet mới",
+        "rendered": "Đã render"
+      }
     },
     "how": {
       "title": "Từ ý tưởng đến tập video đã đăng",
@@ -113,6 +126,6 @@
       "body": "Bắt đầu miễn phí, giữ mọi video bạn làm ra.",
       "button": "Bắt đầu series của bạn"
     },
-    "footer": { "tagline": "Agent AI làm video cho người kể chuyện.", "rights": "Bảo lưu mọi quyền." }
+    "footer": { "tagline": "Agent AI làm video cho người kể chuyện.", "taglineShort": "Sinh ra cho người kể chuyện.", "rights": "Bảo lưu mọi quyền." }
   }
 }

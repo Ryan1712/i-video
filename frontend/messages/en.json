@@ -23,7 +23,7 @@
     "noAccount": "No account yet?"
   },
   "landing": {
-    "nav": { "features": "Features", "how": "How it works", "pricing": "Pricing", "cta": "Get started" },
+    "nav": { "features": "Features", "how": "How it works", "pricing": "Pricing", "cta": "Get started", "login": "Sign in" },
     "hero": {
       "badge": "AI video agent for storytellers",
       "title": "Turn one idea into a whole series",
@@ -35,7 +35,20 @@
         { "value": "34/37", "label": "scenes auto-matched to your assets" },
         { "value": "VI + EN", "label": "narration languages" }
       ],
-      "statsNote": "from our pilot episode"
+      "statsNote": "from our pilot episode",
+      "mockup": {
+        "episodesLabel": "Episodes",
+        "episodeTitle4": "Episode 4: The Signal",
+        "episodeTitle3": "Episode 3: Nightfall",
+        "episodeTitle2": "Episode 2: First Contact",
+        "published": "Published",
+        "youtubeLabel": "YouTube",
+        "sceneTitle1": "The Last Connection",
+        "sceneTitle2": "Cities Go Silent",
+        "sceneTitle3": "The Recovery Plan",
+        "sceneTitle4": "A New Internet Age",
+        "rendered": "Rendered"
+      }
     },
     "how": {
       "title": "From idea to published episode",
@@ -113,6 +126,6 @@
       "body": "Start free, keep every video you make.",
       "button": "Start your series"
     },
-    "footer": { "tagline": "The AI video agent for storytellers.", "rights": "All rights reserved." }
+    "footer": { "tagline": "The AI video agent for storytellers.", "taglineShort": "Built for storytellers.", "rights": "All rights reserved." }
   }
 }

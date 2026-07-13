@@ -68,7 +68,7 @@ export default function Nav() {
             className="hidden md:block text-sm transition-colors duration-200"
             style={{ color: "#8A8F98" }}
           >
-            Sign in
+            {t("login")}
           </Link>
           <Link
             href="/signup"

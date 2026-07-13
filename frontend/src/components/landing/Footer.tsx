@@ -72,7 +72,7 @@ export default function Footer() {
             © {year} Narro. {t("footer.rights")}
           </p>
           <p className="text-xs" style={{ color: "#4A4F5A" }}>
-            {t("footer.tagline")}
+            {t("footer.taglineShort")}
           </p>
         </div>
       </div>

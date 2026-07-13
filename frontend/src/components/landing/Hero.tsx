@@ -196,12 +196,12 @@ export default function Hero() {
               style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}
             >
               <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: "#4A4F5A" }}>
-                Episodes
+                {t("mockup.episodesLabel")}
               </p>
               {[
-                { title: "Episode 4: The Signal", active: true },
-                { title: "Episode 3: Nightfall", active: false },
-                { title: "Episode 2: First Contact", active: false },
+                { title: t("mockup.episodeTitle4"), active: true },
+                { title: t("mockup.episodeTitle3"), active: false },
+                { title: t("mockup.episodeTitle2"), active: false },
               ].map((ep, i) => (
                 <div
                   key={i}
@@ -226,7 +226,7 @@ export default function Hero() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-sm mb-1" style={{ color: "#EDEDEF" }}>
-                    Episode 4: The Signal
+                    {t("mockup.episodeTitle4")}
                   </h3>
                   <div className="flex items-center gap-2">
                     <span
@@ -237,7 +237,7 @@ export default function Hero() {
                         border: "1px solid rgba(16,185,129,0.25)",
                       }}
                     >
-                      ✓ Published
+                      ✓ {t("mockup.published")}
                     </span>
                     <span className="text-xs" style={{ color: "#4A4F5A" }}>
                       4 scenes · 8 min
@@ -255,17 +255,17 @@ export default function Hero() {
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
                     <path d="M4.5 2.5l5 3.5-5 3.5V2.5z"/>
                   </svg>
-                  YouTube
+                  {t("mockup.youtubeLabel")}
                 </div>
               </div>
 
               {/* Scenes */}
               <div className="grid grid-cols-2 gap-3 mt-2">
                 {[
-                  { title: "The Last Connection", status: "done" },
-                  { title: "Cities Go Silent", status: "done" },
-                  { title: "The Recovery Plan", status: "done" },
-                  { title: "A New Internet Age", status: "done" },
+                  { title: t("mockup.sceneTitle1"), status: "done" },
+                  { title: t("mockup.sceneTitle2"), status: "done" },
+                  { title: t("mockup.sceneTitle3"), status: "done" },
+                  { title: t("mockup.sceneTitle4"), status: "done" },
                 ].map((scene, i) => (
                   <div
                     key={i}
@@ -289,7 +289,7 @@ export default function Hero() {
                         {scene.title}
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: "#4A4F5A" }}>
-                        Rendered
+                        {t("mockup.rendered")}
                       </p>
                     </div>
                     <div className="ml-auto">
