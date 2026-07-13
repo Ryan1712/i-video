@@ -1,15 +1,15 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
-const STATS = [
-  { value: "10×", label: "Faster production" },
-  { value: "100%", label: "AI-powered" },
-  { value: "0", label: "Editing skills needed" },
-];
-
 export default function Hero() {
+  const t = useTranslations("landing.hero");
+  const stats = [0, 1, 2].map((i) => ({
+    value: t(`stats.${i}.value`),
+    label: t(`stats.${i}.label`),
+  }));
   const videoRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -61,7 +61,7 @@ export default function Hero() {
             className="w-1.5 h-1.5 rounded-full bg-[#6366F1]"
             style={{ boxShadow: "0 0 6px #6366F1" }}
           />
-          AI-powered video podcast platform
+          {t("badge")}
         </div>
       </div>
 
@@ -71,27 +71,13 @@ export default function Hero() {
           className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight mb-6"
           style={{ color: "#EDEDEF" }}
         >
-          Every{" "}
-          <span
-            style={{
-              background:
-                "linear-gradient(135deg, #818CF8 0%, #6366F1 50%, #4F46E5 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            What If
-          </span>{" "}
-          Deserves to Be Seen
+          {t("title")}
         </h1>
         <p
           className="text-lg md:text-xl leading-relaxed max-w-2xl mx-auto"
           style={{ color: "#8A8F98" }}
         >
-          Turn your hypothetical questions into cinematic video podcasts —
-          AI writes the script, produces the scenes, and publishes to YouTube
-          automatically.
+          {t("subtitle")}
         </p>
       </div>
 
@@ -115,13 +101,13 @@ export default function Hero() {
             (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
           }}
         >
-          Start your first episode
+          {t("cta")}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </Link>
         <a
-          href="#how-it-works"
+          href="#how"
           className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-medium transition-all duration-200"
           style={{
             background: "rgba(255,255,255,0.05)",
@@ -135,30 +121,35 @@ export default function Hero() {
             (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
           }}
         >
-          See how it works
+          {t("ctaSecondary")}
         </a>
       </div>
 
       {/* Stats */}
-      <div className="relative z-10 mt-16 flex items-center gap-8 md:gap-16 animate-fade-up animate-delay-400">
-        {STATS.map((stat, i) => (
-          <div key={i} className="text-center">
-            <p
-              className="text-2xl md:text-3xl font-bold"
-              style={{
-                background: "linear-gradient(135deg, #EDEDEF 0%, #8A8F98 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {stat.value}
-            </p>
-            <p className="text-xs mt-1" style={{ color: "#4A4F5A" }}>
-              {stat.label}
-            </p>
-          </div>
-        ))}
+      <div className="relative z-10 mt-16 flex flex-col items-center gap-4 animate-fade-up animate-delay-400">
+        <div className="flex items-center gap-8 md:gap-16">
+          {stats.map((stat, i) => (
+            <div key={i} className="text-center">
+              <p
+                className="text-2xl md:text-3xl font-bold"
+                style={{
+                  background: "linear-gradient(135deg, #EDEDEF 0%, #8A8F98 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                {stat.value}
+              </p>
+              <p className="text-xs mt-1" style={{ color: "#4A4F5A" }}>
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs" style={{ color: "#4A4F5A" }}>
+          {t("statsNote")}
+        </p>
       </div>
 
       {/* Video mockup */}
@@ -190,7 +181,7 @@ export default function Hero() {
                 color: "#4A4F5A",
               }}
             >
-              app.whatif.ai/episodes/what-if-the-internet-went-dark
+              app.narro.app/series/the-signal/episode-4
             </div>
           </div>
 
@@ -208,9 +199,9 @@ export default function Hero() {
                 Episodes
               </p>
               {[
-                { title: "What If the Internet…", active: true },
-                { title: "What If Mars Had…", active: false },
-                { title: "What If AI Wrote…", active: false },
+                { title: "Episode 4: The Signal", active: true },
+                { title: "Episode 3: Nightfall", active: false },
+                { title: "Episode 2: First Contact", active: false },
               ].map((ep, i) => (
                 <div
                   key={i}
@@ -235,7 +226,7 @@ export default function Hero() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-sm mb-1" style={{ color: "#EDEDEF" }}>
-                    What If the Internet Went Dark?
+                    Episode 4: The Signal
                   </h3>
                   <div className="flex items-center gap-2">
                     <span

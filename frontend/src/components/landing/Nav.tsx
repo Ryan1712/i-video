@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Logo from "@/components/Logo";
 import LocaleSwitcher from "@/components/LocaleSwitcher";
 
 export default function Nav() {
+  const t = useTranslations("landing.nav");
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -36,10 +38,14 @@ export default function Nav() {
 
         {/* Links */}
         <div className="hidden md:flex items-center gap-8">
-          {["Features", "How It Works", "Pricing"].map((item) => (
+          {[
+            { key: "features", href: "#features" },
+            { key: "how", href: "#how" },
+            { key: "pricing", href: "#pricing" },
+          ].map((item) => (
             <a
-              key={item}
-              href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
+              key={item.key}
+              href={item.href}
               className="text-sm transition-colors duration-200"
               style={{ color: "#8A8F98" }}
               onMouseEnter={(e) =>
@@ -49,7 +55,7 @@ export default function Nav() {
                 (e.currentTarget.style.color = "#8A8F98")
               }
             >
-              {item}
+              {t(item.key)}
             </a>
           ))}
         </div>
@@ -82,7 +88,7 @@ export default function Nav() {
               (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
             }}
           >
-            Get started free
+            {t("cta")}
           </Link>
         </div>
       </div>

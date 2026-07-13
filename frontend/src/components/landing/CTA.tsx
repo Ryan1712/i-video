@@ -1,6 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+
 export default function CTA() {
+  const t = useTranslations("landing.cta");
+
   return (
     <section
       className="relative py-32 px-6 overflow-hidden"
@@ -23,27 +28,17 @@ export default function CTA() {
           className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-6"
           style={{ color: "#EDEDEF" }}
         >
-          Your next viral video starts with{" "}
-          <span
-            style={{
-              background: "linear-gradient(135deg, #818CF8, #6366F1)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            a question
-          </span>
+          {t("title")}
         </h2>
         <p
           className="text-base md:text-lg mb-10 leading-relaxed"
           style={{ color: "#8A8F98" }}
         >
-          Join thousands of creators turning hypothetical scenarios into captivating video podcasts. No editing skills, no production budget, no excuses.
+          {t("body")}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <a
+          <Link
             href="/signup"
             className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-base font-semibold text-white transition-all duration-300"
             style={{
@@ -61,16 +56,12 @@ export default function CTA() {
               (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
             }}
           >
-            Start for free — no credit card
+            {t("button")}
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-          </a>
+          </Link>
         </div>
-
-        <p className="mt-6 text-xs" style={{ color: "#4A4F5A" }}>
-          Free tier includes 1 episode/month. Upgrade anytime.
-        </p>
       </div>
     </section>
   );

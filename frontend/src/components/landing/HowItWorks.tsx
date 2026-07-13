@@ -1,33 +1,17 @@
 "use client";
 
-const STEPS = [
-  {
-    number: "01",
-    title: "Write your What If",
-    description:
-      "Type any hypothetical scenario — \"What if electricity was never discovered?\" or \"What if humans colonized the ocean floor?\" The more specific, the more cinematic the result.",
-    detail: "AI expands your premise into a 4-8 scene narrative structure with dramatic beats.",
-  },
-  {
-    number: "02",
-    title: "AI produces your episode",
-    description:
-      "Our pipeline writes scene-by-scene scripts, generates visuals, mixes narration, adds music, and renders a polished video — while you make a coffee.",
-    detail: "Typical build time: 3–8 minutes per episode.",
-  },
-  {
-    number: "03",
-    title: "Publish to the world",
-    description:
-      "Connect your YouTube channel once. After that, publishing is a single click — title, description, tags, and thumbnail are all AI-generated and optimized for search.",
-    detail: "Your video goes live while you're thinking about the next What If.",
-  },
-];
+import { useTranslations } from "next-intl";
 
 export default function HowItWorks() {
+  const t = useTranslations("landing.how");
+  const steps = [0, 1, 2, 3].map((i) => ({
+    title: t(`steps.${i}.title`),
+    body: t(`steps.${i}.body`),
+  }));
+
   return (
     <section
-      id="how-it-works"
+      id="how"
       className="relative py-32 px-6"
       style={{
         background:
@@ -37,28 +21,11 @@ export default function HowItWorks() {
       <div className="max-w-7xl mx-auto">
         {/* Heading */}
         <div className="text-center mb-20">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-4"
-            style={{ color: "#6366F1" }}
-          >
-            How It Works
-          </p>
           <h2
             className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight"
             style={{ color: "#EDEDEF" }}
           >
-            From idea to YouTube
-            <br />
-            <span
-              style={{
-                background: "linear-gradient(135deg, #818CF8, #6366F1)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              in under 10 minutes
-            </span>
+            {t("title")}
           </h2>
         </div>
 
@@ -74,7 +41,7 @@ export default function HowItWorks() {
           />
 
           <div className="flex flex-col gap-16">
-            {STEPS.map((step, i) => (
+            {steps.map((step, i) => (
               <div
                 key={i}
                 className={`relative flex flex-col md:flex-row items-start gap-8 md:gap-16 ${
@@ -82,19 +49,8 @@ export default function HowItWorks() {
                 }`}
               >
                 {/* Content */}
-                <div className="flex-1 md:text-right">
-                  {i % 2 === 0 ? (
-                    <StepContent step={step} align="right" />
-                  ) : (
-                    <div className="md:hidden">
-                      <StepContent step={step} align="left" />
-                    </div>
-                  )}
-                  {i % 2 !== 0 && (
-                    <div className="hidden md:block">
-                      <StepContent step={step} align="left" />
-                    </div>
-                  )}
+                <div className="flex-1">
+                  <StepContent step={step} number={i + 1} align={i % 2 === 0 ? "right" : "left"} />
                 </div>
 
                 {/* Center dot */}
@@ -112,14 +68,8 @@ export default function HowItWorks() {
                   </div>
                 </div>
 
-                {/* Mirrored content */}
-                <div className="flex-1">
-                  {i % 2 === 1 ? (
-                    <div className="hidden md:block">
-                      <StepContent step={step} align="right" />
-                    </div>
-                  ) : null}
-                </div>
+                {/* Spacer to keep the dot centered */}
+                <div className="hidden md:block flex-1" />
               </div>
             ))}
           </div>
@@ -131,9 +81,11 @@ export default function HowItWorks() {
 
 function StepContent({
   step,
+  number,
   align,
 }: {
-  step: (typeof STEPS)[0];
+  step: { title: string; body: string };
+  number: number;
   align: "left" | "right";
 }) {
   return (
@@ -142,7 +94,7 @@ function StepContent({
         className="text-6xl font-black opacity-10 block leading-none mb-3"
         style={{ color: "#6366F1" }}
       >
-        {step.number}
+        {String(number).padStart(2, "0")}
       </span>
       <h3
         className="text-xl font-bold mb-3 tracking-tight"
@@ -154,16 +106,7 @@ function StepContent({
         className="text-sm leading-relaxed mb-3 max-w-sm"
         style={{ color: "#8A8F98", marginLeft: align === "right" ? "auto" : undefined }}
       >
-        {step.description}
-      </p>
-      <p
-        className="text-xs"
-        style={{
-          color: "#6366F1",
-          marginLeft: align === "right" ? "auto" : undefined,
-        }}
-      >
-        {step.detail}
+        {step.body}
       </p>
     </div>
   );

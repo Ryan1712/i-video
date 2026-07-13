@@ -1,62 +1,46 @@
 "use client";
 
-const PLANS = [
-  {
-    name: "Free",
-    price: "0",
-    billing: "forever",
-    description: "Start exploring What If without a credit card.",
-    features: [
-      "1 episode per month",
-      "Up to 4 scenes per episode",
-      "720p video output",
-      "Watermarked export",
-      "Community support",
-    ],
-    cta: "Start for free",
-    popular: false,
-    href: "/signup",
-  },
-  {
-    name: "Creator",
-    price: "19",
-    billing: "per month",
-    description: "For creators who publish consistently.",
-    features: [
-      "10 episodes per month",
-      "Up to 8 scenes per episode",
-      "1080p video output",
-      "No watermark",
-      "YouTube auto-publish",
-      "Priority rendering",
-      "Email support",
-    ],
-    cta: "Get Creator",
-    popular: true,
-    href: "/signup?plan=creator",
-  },
-  {
-    name: "Studio",
-    price: "49",
-    billing: "per month",
-    description: "For studios and agencies at scale.",
-    features: [
-      "Unlimited episodes",
-      "Unlimited scenes",
-      "4K video output",
-      "No watermark",
-      "YouTube + multi-platform",
-      "Fastest rendering queue",
-      "Custom branding",
-      "Dedicated support",
-    ],
-    cta: "Get Studio",
-    popular: false,
-    href: "/signup?plan=studio",
-  },
-];
+import { useTranslations } from "next-intl";
+
+const PLAN_KEYS = ["free", "creator", "studio"] as const;
+const PRICES: Record<(typeof PLAN_KEYS)[number], string> = {
+  free: "0",
+  creator: "19",
+  studio: "49",
+};
+const POPULAR: Record<(typeof PLAN_KEYS)[number], boolean> = {
+  free: false,
+  creator: true,
+  studio: false,
+};
+const HREFS: Record<(typeof PLAN_KEYS)[number], string> = {
+  free: "/signup",
+  creator: "/signup?plan=creator",
+  studio: "/signup?plan=studio",
+};
+const FEATURE_COUNTS: Record<(typeof PLAN_KEYS)[number], number> = {
+  free: 5,
+  creator: 7,
+  studio: 8,
+};
 
 export default function Pricing() {
+  const t = useTranslations("landing.pricing");
+
+  const plans = PLAN_KEYS.map((key) => ({
+    key,
+    name: t(`plans.${key}.name`),
+    description: t(`plans.${key}.description`),
+    cta: t(`plans.${key}.cta`),
+    features: Array.from({ length: FEATURE_COUNTS[key] }, (_, i) =>
+      t(`plans.${key}.features.${i}`)
+    ),
+    price: PRICES[key],
+    billing: key === "free" ? t("forever") : t("perMonth"),
+    popular: POPULAR[key],
+    href: HREFS[key],
+  }));
+
   return (
     <section
       id="pricing"
@@ -75,28 +59,22 @@ export default function Pricing() {
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Heading */}
         <div className="text-center mb-16">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-4"
-            style={{ color: "#6366F1" }}
-          >
-            Pricing
-          </p>
           <h2
             className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight"
             style={{ color: "#EDEDEF" }}
           >
-            Simple, transparent pricing
+            {t("title")}
           </h2>
           <p className="text-base mt-4 max-w-xl mx-auto" style={{ color: "#8A8F98" }}>
-            No hidden fees. No per-minute charges. Just a flat plan that scales with your ambition.
+            {t("subtitle")}
           </p>
         </div>
 
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {PLANS.map((plan) => (
+          {plans.map((plan) => (
             <div
-              key={plan.name}
+              key={plan.key}
               className="relative rounded-2xl p-8 flex flex-col transition-all duration-300"
               style={{
                 background: plan.popular
@@ -119,7 +97,7 @@ export default function Pricing() {
                       boxShadow: "0 0 16px rgba(99,102,241,0.4)",
                     }}
                   >
-                    Most Popular
+                    {t("popular")}
                   </span>
                 </div>
               )}
@@ -223,7 +201,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center mt-8 text-sm" style={{ color: "#4A4F5A" }}>
-          All plans include a 14-day free trial. No credit card required for Free tier.
+          {t("footnote")}
         </p>
       </div>
     </section>

@@ -21,5 +21,98 @@
     "signupButton": "Create account",
     "haveAccount": "Already have an account?",
     "noAccount": "No account yet?"
+  },
+  "landing": {
+    "nav": { "features": "Features", "how": "How it works", "pricing": "Pricing", "cta": "Get started" },
+    "hero": {
+      "badge": "AI video agent for storytellers",
+      "title": "Turn one idea into a whole series",
+      "subtitle": "AI writes the script, you approve every word. Narro builds the video — consistent characters, voice, and style across every episode — and publishes straight to YouTube.",
+      "cta": "Start your series",
+      "ctaSecondary": "See how it works",
+      "stats": [
+        { "value": "1 idea", "label": "becomes an 8-minute script" },
+        { "value": "34/37", "label": "scenes auto-matched to your assets" },
+        { "value": "VI + EN", "label": "narration languages" }
+      ],
+      "statsNote": "from our pilot episode"
+    },
+    "how": {
+      "title": "From idea to published episode",
+      "steps": [
+        { "title": "Drop in your idea", "body": "A rough premise and a target length are enough. Or paste a finished script." },
+        { "title": "AI writes the script — you approve it", "body": "Narro drafts narration sized to your target duration. Edit every word before anything is produced." },
+        { "title": "Scenes and images, matched automatically", "body": "The script is split into scenes, matched against your series asset library, and missing images are generated in your series style." },
+        { "title": "Video out, straight to YouTube", "body": "Voice-over, subtitles, motion and music — rendered server-side and published to your channel in one click." }
+      ]
+    },
+    "features": {
+      "title": "Built for series, not one-off clips",
+      "items": [
+        { "title": "Script-to-length AI", "body": "Tell it 8 minutes, get an 8-minute script — in your series' language and tone." },
+        { "title": "Series asset library", "body": "Characters, locations and props live at the series level, so episode 10 looks like episode 1." },
+        { "title": "On-brand image generation", "body": "Missing scene images are generated from your series style bible — no prompt engineering." },
+        { "title": "Multi-language narration", "body": "Vietnamese and English text-to-speech with a fixed voice per series." },
+        { "title": "Subtitles that never mishear", "body": "Captions come from your script, not speech recognition — 100% accurate." },
+        { "title": "One-click YouTube publish", "body": "Connect your channel once; every built episode uploads with title, description and tags." }
+      ]
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "No hidden fees. No per-minute charges. Just a flat plan that scales with your ambition.",
+      "perMonth": "per month",
+      "forever": "forever",
+      "popular": "Most Popular",
+      "footnote": "All plans include a 14-day free trial. No credit card required for Free tier.",
+      "plans": {
+        "free": {
+          "name": "Free",
+          "description": "Start exploring Narro without a credit card.",
+          "cta": "Start for free",
+          "features": [
+            "1 episode per month",
+            "Up to 4 scenes per episode",
+            "720p video output",
+            "Watermarked export",
+            "Community support"
+          ]
+        },
+        "creator": {
+          "name": "Creator",
+          "description": "For creators who publish consistently.",
+          "cta": "Get Creator",
+          "features": [
+            "10 episodes per month",
+            "Up to 8 scenes per episode",
+            "1080p video output",
+            "No watermark",
+            "YouTube auto-publish",
+            "Priority rendering",
+            "Email support"
+          ]
+        },
+        "studio": {
+          "name": "Studio",
+          "description": "For studios and agencies at scale.",
+          "cta": "Get Studio",
+          "features": [
+            "Unlimited episodes",
+            "Unlimited scenes",
+            "4K video output",
+            "No watermark",
+            "YouTube + multi-platform",
+            "Fastest rendering queue",
+            "Custom branding",
+            "Dedicated support"
+          ]
+        }
+      }
+    },
+    "cta": {
+      "title": "Your first episode is one idea away",
+      "body": "Start free, keep every video you make.",
+      "button": "Start your series"
+    },
+    "footer": { "tagline": "The AI video agent for storytellers.", "rights": "All rights reserved." }
   }
 }

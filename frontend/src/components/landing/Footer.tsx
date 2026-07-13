@@ -1,13 +1,16 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import Logo from "@/components/Logo";
 
 export default function Footer() {
+  const t = useTranslations("landing");
   const links = {
     Product: ["Features", "Pricing", "Changelog", "Roadmap"],
     Resources: ["Documentation", "API Reference", "Status", "Blog"],
     Company: ["About", "Careers", "Privacy", "Terms"],
   };
+  const year = new Date().getFullYear();
 
   return (
     <footer
@@ -22,10 +25,10 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="mb-4">
-              <Logo size={32} />
+              <Logo size={24} />
             </div>
             <p className="text-sm leading-relaxed" style={{ color: "#4A4F5A" }}>
-              AI-powered video podcast platform. Turn any hypothetical into a cinematic episode.
+              {t("footer.tagline")}
             </p>
           </div>
 
@@ -66,10 +69,10 @@ export default function Footer() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
           <p className="text-xs" style={{ color: "#4A4F5A" }}>
-            © 2026 What If? All rights reserved.
+            © {year} Narro. {t("footer.rights")}
           </p>
           <p className="text-xs" style={{ color: "#4A4F5A" }}>
-            Built with AI. Designed for creators.
+            {t("footer.tagline")}
           </p>
         </div>
       </div>

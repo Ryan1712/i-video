@@ -21,5 +21,98 @@
     "signupButton": "Tạo tài khoản",
     "haveAccount": "Đã có tài khoản?",
     "noAccount": "Chưa có tài khoản?"
+  },
+  "landing": {
+    "nav": { "features": "Tính năng", "how": "Cách hoạt động", "pricing": "Bảng giá", "cta": "Bắt đầu" },
+    "hero": {
+      "badge": "Agent AI làm video cho người kể chuyện",
+      "title": "Biến một ý tưởng thành cả series video",
+      "subtitle": "AI viết kịch bản, bạn duyệt từng chữ. Narro dựng video — nhân vật, giọng đọc, phong cách nhất quán xuyên mọi tập — và đăng thẳng lên YouTube.",
+      "cta": "Bắt đầu series của bạn",
+      "ctaSecondary": "Xem cách hoạt động",
+      "stats": [
+        { "value": "1 ý tưởng", "label": "thành kịch bản 8 phút" },
+        { "value": "34/37", "label": "cảnh tự khớp ảnh có sẵn" },
+        { "value": "VI + EN", "label": "ngôn ngữ giọng đọc" }
+      ],
+      "statsNote": "từ tập thí điểm của chúng tôi"
+    },
+    "how": {
+      "title": "Từ ý tưởng đến tập video đã đăng",
+      "steps": [
+        { "title": "Đưa ý tưởng vào", "body": "Một tiền đề sơ sài và thời lượng mong muốn là đủ. Hoặc dán kịch bản có sẵn." },
+        { "title": "AI viết kịch bản — bạn duyệt", "body": "Narro viết lời dẫn đúng thời lượng bạn cần. Sửa từng chữ trước khi bất cứ thứ gì được sản xuất." },
+        { "title": "Cảnh và ảnh, tự khớp", "body": "Kịch bản được chia cảnh, khớp với kho ảnh của series, ảnh thiếu được sinh đúng phong cách series." },
+        { "title": "Video hoàn chỉnh, lên thẳng YouTube", "body": "Giọng đọc, phụ đề, chuyển động và nhạc — render trên server và đăng lên kênh của bạn trong một cú bấm." }
+      ]
+    },
+    "features": {
+      "title": "Sinh ra cho series, không phải clip lẻ",
+      "items": [
+        { "title": "AI viết đúng thời lượng", "body": "Yêu cầu 8 phút, nhận kịch bản 8 phút — đúng ngôn ngữ và giọng văn của series." },
+        { "title": "Kho tài sản series", "body": "Nhân vật, bối cảnh, đồ vật nằm ở cấp series — tập 10 trông y như tập 1." },
+        { "title": "Sinh ảnh đúng phong cách", "body": "Ảnh thiếu được sinh theo style bible của series — không cần biết viết prompt." },
+        { "title": "Giọng đọc đa ngôn ngữ", "body": "TTS tiếng Việt và tiếng Anh, giọng cố định theo từng series." },
+        { "title": "Phụ đề không bao giờ nghe nhầm", "body": "Phụ đề lấy từ kịch bản, không phải nhận dạng giọng nói — chính xác 100%." },
+        { "title": "Đăng YouTube một cú bấm", "body": "Kết nối kênh một lần; mỗi tập build xong tự đăng kèm tiêu đề, mô tả, tag." }
+      ]
+    },
+    "pricing": {
+      "title": "Bảng giá đơn giản, minh bạch",
+      "subtitle": "Không phí ẩn. Không tính theo phút. Chỉ một gói cố định mở rộng theo tham vọng của bạn.",
+      "perMonth": "mỗi tháng",
+      "forever": "vĩnh viễn",
+      "popular": "Phổ biến nhất",
+      "footnote": "Mọi gói đều có 14 ngày dùng thử miễn phí. Không cần thẻ tín dụng cho gói Free.",
+      "plans": {
+        "free": {
+          "name": "Free",
+          "description": "Bắt đầu khám phá Narro mà không cần thẻ tín dụng.",
+          "cta": "Bắt đầu miễn phí",
+          "features": [
+            "1 tập mỗi tháng",
+            "Tối đa 4 cảnh mỗi tập",
+            "Xuất video 720p",
+            "Có watermark",
+            "Hỗ trợ cộng đồng"
+          ]
+        },
+        "creator": {
+          "name": "Creator",
+          "description": "Dành cho người sáng tạo đăng bài đều đặn.",
+          "cta": "Chọn Creator",
+          "features": [
+            "10 tập mỗi tháng",
+            "Tối đa 8 cảnh mỗi tập",
+            "Xuất video 1080p",
+            "Không watermark",
+            "Tự động đăng YouTube",
+            "Ưu tiên hàng render",
+            "Hỗ trợ qua email"
+          ]
+        },
+        "studio": {
+          "name": "Studio",
+          "description": "Dành cho studio và agency quy mô lớn.",
+          "cta": "Chọn Studio",
+          "features": [
+            "Không giới hạn số tập",
+            "Không giới hạn số cảnh",
+            "Xuất video 4K",
+            "Không watermark",
+            "YouTube + đa nền tảng",
+            "Hàng render nhanh nhất",
+            "Thương hiệu riêng",
+            "Hỗ trợ chuyên biệt"
+          ]
+        }
+      }
+    },
+    "cta": {
+      "title": "Tập đầu tiên chỉ cách bạn một ý tưởng",
+      "body": "Bắt đầu miễn phí, giữ mọi video bạn làm ra.",
+      "button": "Bắt đầu series của bạn"
+    },
+    "footer": { "tagline": "Agent AI làm video cho người kể chuyện.", "rights": "Bảo lưu mọi quyền." }
   }
 }

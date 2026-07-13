@@ -1,49 +1,21 @@
 "use client";
 
-const FEATURES = [
-  {
-    icon: "✦",
-    title: "AI Scene Writing",
-    description:
-      "Describe your What If scenario and AI breaks it into compelling, structured scenes with narrative arc.",
-    span: "col-span-2",
-    accent: true,
-  },
-  {
-    icon: "◈",
-    title: "Cinematic Rendering",
-    description:
-      "Professional video output with dynamic visuals, transitions, and a soundtrack that fits your story.",
-    span: "col-span-1",
-    accent: false,
-  },
-  {
-    icon: "▶",
-    title: "YouTube Publishing",
-    description:
-      "One-click upload with AI-generated title, description, tags, and thumbnail. Your audience is waiting.",
-    span: "col-span-1",
-    accent: false,
-  },
-  {
-    icon: "⬡",
-    title: "Episode Library",
-    description:
-      "Organize, manage, and republish your content from a single dashboard.",
-    span: "col-span-2",
-    accent: false,
-  },
-  {
-    icon: "◎",
-    title: "Zero Skills Needed",
-    description:
-      "No video editing. No scriptwriting experience. No production crew. Just your ideas.",
-    span: "col-span-1",
-    accent: false,
-  },
-];
+import { useTranslations } from "next-intl";
+
+const ICONS = ["✦", "◈", "◎", "⬡", "▶", "✓"];
+const SPANS = ["col-span-2", "col-span-1", "col-span-1", "col-span-2", "col-span-1", "col-span-1"];
+const ACCENTS = [true, false, false, false, false, false];
 
 export default function Features() {
+  const t = useTranslations("landing.features");
+  const items = [0, 1, 2, 3, 4, 5].map((i) => ({
+    title: t(`items.${i}.title`),
+    body: t(`items.${i}.body`),
+    icon: ICONS[i],
+    span: SPANS[i],
+    accent: ACCENTS[i],
+  }));
+
   return (
     <section
       id="features"
@@ -53,36 +25,17 @@ export default function Features() {
       {/* Section heading */}
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <p
-            className="text-xs font-semibold uppercase tracking-widest mb-4"
-            style={{ color: "#6366F1" }}
-          >
-            Features
-          </p>
           <h2
             className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight"
             style={{ color: "#EDEDEF" }}
           >
-            Everything you need to go from{" "}
-            <span
-              style={{
-                background: "linear-gradient(135deg, #818CF8, #6366F1)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              idea to published
-            </span>
+            {t("title")}
           </h2>
-          <p className="text-base mt-4 max-w-xl mx-auto" style={{ color: "#8A8F98" }}>
-            A complete production pipeline powered by AI — from your first sentence to a live video.
-          </p>
         </div>
 
         {/* Bento Grid */}
         <div className="grid grid-cols-3 gap-4 auto-rows-auto">
-          {FEATURES.map((f, i) => (
+          {items.map((f, i) => (
             <div
               key={i}
               className={`${f.span} p-8 rounded-2xl relative overflow-hidden group transition-all duration-300`}
@@ -129,7 +82,7 @@ export default function Features() {
                 {f.title}
               </h3>
               <p className="text-sm leading-relaxed" style={{ color: "#8A8F98" }}>
-                {f.description}
+                {f.body}
               </p>
             </div>
           ))}
