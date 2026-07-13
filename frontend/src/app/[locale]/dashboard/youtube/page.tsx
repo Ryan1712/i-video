@@ -168,7 +168,7 @@ export default function YouTubePage() {
           <path d="M7 6v4M7 4.5v.5" stroke="#818CF8" strokeWidth="1.2" strokeLinecap="round" />
         </svg>
         <p className="text-xs leading-relaxed" style={{ color: "#818CF8" }}>
-          What If? requests upload-only access to your YouTube account. We never read your existing videos or access your account data.
+          Narro requests upload-only access to your YouTube account. We never read your existing videos or access your account data.
         </p>
       </div>
     </div>
