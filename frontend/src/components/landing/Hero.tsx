@@ -240,7 +240,7 @@ export default function Hero() {
                       ✓ {t("mockup.published")}
                     </span>
                     <span className="text-xs" style={{ color: "#4A4F5A" }}>
-                      4 scenes · 8 min
+                      {t("mockup.meta")}
                     </span>
                   </div>
                 </div>

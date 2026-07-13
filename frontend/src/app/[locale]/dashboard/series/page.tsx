@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api";
 
@@ -20,6 +21,7 @@ const input = {
 };
 
 export default function SeriesPage() {
+  const t = useTranslations("series");
   const [series, setSeries] = useState<Series[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -34,17 +36,18 @@ export default function SeriesPage() {
     try {
       setSeries(await api.get<Series[]>("/series"));
     } catch {
-      setError("Failed to load series.");
+      setError(t("loadError"));
     }
   }
 
   useEffect(() => {
     refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleCreate() {
     if (!name.trim()) {
-      setError("Series name is required.");
+      setError(t("nameRequired"));
       return;
     }
     setSaving(true);
@@ -62,7 +65,7 @@ export default function SeriesPage() {
       setVoiceId("");
       await refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Failed to create series.");
+      setError(err instanceof ApiError ? err.detail : t("createFailed"));
     } finally {
       setSaving(false);
     }
@@ -71,32 +74,32 @@ export default function SeriesPage() {
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: "#EDEDEF" }}>Series</h1>
+        <h1 className="text-2xl font-bold" style={{ color: "#EDEDEF" }}>{t("title")}</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
           style={{ background: "linear-gradient(135deg, #6366F1, #4F46E5)" }}
         >
-          New series
+          {t("new")}
         </button>
       </div>
 
       {showForm && (
         <div className="p-4 rounded-2xl mb-6 flex flex-col gap-3" style={panel}>
           <input className="px-3 py-2 rounded-lg text-sm" style={input}
-            placeholder="Series name" value={name} onChange={(e) => setName(e.target.value)} />
+            placeholder={t("namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
           <textarea className="px-3 py-2 rounded-lg text-sm" style={input} rows={2}
-            placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+            placeholder={t("descriptionPlaceholder")} value={description} onChange={(e) => setDescription(e.target.value)} />
           <select className="px-3 py-2 rounded-lg text-sm w-40" style={input}
-            value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Language">
+            value={language} onChange={(e) => setLanguage(e.target.value)} aria-label={t("language")}>
             <option value="en">English</option>
             <option value="vi">Tiếng Việt</option>
           </select>
           <textarea className="px-3 py-2 rounded-lg text-sm" style={input} rows={3}
-            placeholder="Style bible — describe the visual style used for every generated image (e.g. 'black stick figures on white background, minimal, bold red accents')"
+            placeholder={t("styleBiblePlaceholder")}
             value={styleBible} onChange={(e) => setStyleBible(e.target.value)} />
           <input className="px-3 py-2 rounded-lg text-sm" style={input}
-            placeholder="TTS voice ID (e.g. ElevenLabs voice id — pick after the voice comparison)"
+            placeholder={t("voicePlaceholder")}
             value={voiceId} onChange={(e) => setVoiceId(e.target.value)} />
           <button
             onClick={handleCreate}
@@ -104,7 +107,7 @@ export default function SeriesPage() {
             className="px-4 py-2 rounded-xl text-sm font-semibold text-white w-fit"
             style={{ background: "linear-gradient(135deg, #6366F1, #4F46E5)", opacity: saving ? 0.6 : 1 }}
           >
-            Create
+            {t("create")}
           </button>
         </div>
       )}
@@ -119,12 +122,12 @@ export default function SeriesPage() {
               <p className="text-sm font-semibold" style={{ color: "#EDEDEF" }}>{s.name}</p>
               {s.description && <p className="text-xs mt-1" style={{ color: "#8A8F98" }}>{s.description}</p>}
             </div>
-            <span className="text-xs" style={{ color: "#8A8F98" }}>{s.episode_count} episodes</span>
+            <span className="text-xs" style={{ color: "#8A8F98" }}>{t("episodeCount", { count: s.episode_count })}</span>
           </Link>
         ))}
         {series.length === 0 && !showForm && (
           <p className="text-sm" style={{ color: "#8A8F98" }}>
-            No series yet. A series holds shared character images, style, and voice for all its episodes.
+            {t("empty")}
           </p>
         )}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api";
 
@@ -14,18 +15,19 @@ interface Episode {
   scenes: { id: number }[];
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  draft:     { label: "Draft",     color: "#8A8F98", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
-  building:  { label: "Building",  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.25)" },
-  built:     { label: "Built",     color: "#10B981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.25)" },
-  uploading: { label: "Uploading", color: "#818CF8", bg: "rgba(99,102,241,0.1)",  border: "rgba(99,102,241,0.25)" },
-  uploaded:  { label: "Published", color: "#10B981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.25)" },
-};
-
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+    draft:     { label: t("status.draft"),     color: "#8A8F98", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
+    building:  { label: t("status.building"),  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.25)" },
+    built:     { label: t("status.built"),     color: "#10B981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.25)" },
+    uploading: { label: t("status.uploading"), color: "#818CF8", bg: "rgba(99,102,241,0.1)",  border: "rgba(99,102,241,0.25)" },
+    uploaded:  { label: t("status.uploaded"),  color: "#10B981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.25)" },
+  };
 
   useEffect(() => {
     api
@@ -35,10 +37,11 @@ export default function DashboardPage() {
         if (err instanceof ApiError && err.status === 401) {
           window.location.href = "/login";
         } else {
-          setError("Failed to load episodes.");
+          setError(t("loadError"));
         }
       })
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -47,10 +50,10 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#EDEDEF" }}>
-            Episodes
+            {t("title")}
           </h1>
           <p className="text-sm mt-1" style={{ color: "#8A8F98" }}>
-            {episodes.length} episode{episodes.length !== 1 ? "s" : ""}
+            {t("episodeCount", { count: episodes.length })}
           </p>
         </div>
         <Link
@@ -72,7 +75,7 @@ export default function DashboardPage() {
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
-          New episode
+          {t("newEpisode")}
         </Link>
       </div>
 
@@ -111,17 +114,17 @@ export default function DashboardPage() {
             </svg>
           </div>
           <h3 className="text-base font-semibold mb-2" style={{ color: "#EDEDEF" }}>
-            No episodes yet
+            {t("empty")}
           </h3>
           <p className="text-sm mb-6" style={{ color: "#8A8F98" }}>
-            Create your first What If episode to get started.
+            {t("emptyHint")}
           </p>
           <Link
             href="/dashboard/episodes/new"
             className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
             style={{ background: "linear-gradient(135deg, #6366F1, #4F46E5)" }}
           >
-            Create episode
+            {t("createEpisode")}
           </Link>
         </div>
       )}
@@ -162,8 +165,8 @@ export default function DashboardPage() {
                     {ep.title}
                   </p>
                   <p className="text-xs mt-0.5 truncate" style={{ color: "#4A4F5A" }}>
-                    {ep.scenes.length} scene{ep.scenes.length !== 1 ? "s" : ""}
-                    {ep.youtube_video_id && " · YouTube"}
+                    {t("sceneCount", { count: ep.scenes.length })}
+                    {ep.youtube_video_id && ` · ${t("youtubeTag")}`}
                   </p>
                 </div>
 

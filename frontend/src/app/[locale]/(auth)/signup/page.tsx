@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { signup } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 
 export default function SignupPage() {
+  const t = useTranslations("auth");
+  const te = useTranslations("errors");
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,11 +20,11 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
     if (password !== confirm) {
-      setError("Passwords do not match.");
+      setError(t("passwordMismatch"));
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError(t("passwordTooShort"));
       return;
     }
     setLoading(true);
@@ -30,13 +33,9 @@ export default function SignupPage() {
       router.push("/dashboard");
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(
-          err.status === 409
-            ? "An account with this email already exists."
-            : err.detail,
-        );
+        setError(err.status === 409 ? t("emailExists") : err.detail);
       } else {
-        setError("Something went wrong. Please try again.");
+        setError(te("generic"));
       }
     } finally {
       setLoading(false);
@@ -72,22 +71,22 @@ export default function SignupPage() {
 
       <div className="relative">
         <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: "#EDEDEF" }}>
-          Create your account
+          {t("signupTitle")}
         </h1>
         <p className="text-sm mb-8" style={{ color: "#8A8F98" }}>
-          Free to start — no credit card required
+          {t("signupSubtitle")}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>
-              Email
+              {t("email")}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t("emailPlaceholder")}
               required
               autoComplete="email"
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
@@ -98,13 +97,13 @@ export default function SignupPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>
-              Password
+              {t("password")}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 8 characters"
+              placeholder={t("passwordMinPlaceholder")}
               required
               autoComplete="new-password"
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
@@ -115,13 +114,13 @@ export default function SignupPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>
-              Confirm password
+              {t("confirmPassword")}
             </label>
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t("passwordPlaceholder")}
               required
               autoComplete="new-password"
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
@@ -155,18 +154,19 @@ export default function SignupPage() {
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? t("creatingAccount") : t("signupButton")}
           </button>
 
           <p className="text-xs text-center" style={{ color: "#4A4F5A" }}>
-            By signing up, you agree to our{" "}
-            <a href="#" style={{ color: "#6366F1" }}>Terms</a> and{" "}
-            <a href="#" style={{ color: "#6366F1" }}>Privacy Policy</a>.
+            {t("termsPrefix")}{" "}
+            <a href="#" style={{ color: "#6366F1" }}>{t("termsLink")}</a>{" "}
+            {t("and")}{" "}
+            <a href="#" style={{ color: "#6366F1" }}>{t("privacyLink")}</a>.
           </p>
         </form>
 
         <p className="text-center text-sm mt-6" style={{ color: "#8A8F98" }}>
-          Already have an account?{" "}
+          {t("haveAccount")}{" "}
           <Link
             href="/login"
             className="font-medium transition-colors"
@@ -174,7 +174,7 @@ export default function SignupPage() {
             onMouseEnter={(e) => (e.currentTarget.style.color = "#6366F1")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#818CF8")}
           >
-            Sign in
+            {t("signInLink")}
           </Link>
         </p>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { api, ApiError } from "@/lib/api";
 
 interface Props {
@@ -19,12 +20,6 @@ const input = {
   color: "#EDEDEF",
 };
 
-const ERROR_MESSAGES: Record<string, string> = {
-  ERR_SCRIPT_GENERATION_FAILED: "Script generation failed — please try again.",
-  ERR_SCRIPT_ANALYSIS_FAILED: "Scene analysis failed — please try again.",
-  ERR_EPISODE_NOT_DRAFT: "Scenes can only be regenerated while the episode is a draft.",
-};
-
 export default function ScriptPanel({
   episodeId,
   initialBrief,
@@ -33,6 +28,8 @@ export default function ScriptPanel({
   disabled,
   onEpisodeUpdated,
 }: Props) {
+  const t = useTranslations("episodes.script");
+  const te = useTranslations("errors");
   const [brief, setBrief] = useState(initialBrief);
   const [minutes, setMinutes] = useState<number | "">(
     initialDurationSec ? Math.round(initialDurationSec / 60) : 8
@@ -42,14 +39,20 @@ export default function ScriptPanel({
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
 
-  function friendly(err: unknown, fallback: string) {
-    if (err instanceof ApiError) return ERROR_MESSAGES[err.detail] ?? err.detail;
-    return fallback;
+  // Missing catalog keys resolve to their own dotted path in the Jest mock,
+  // so comparing against that path is how we detect an unmapped ERR_ code.
+  function friendlyError(err: unknown): string {
+    if (err instanceof ApiError) {
+      const path = `errors.${err.detail}`;
+      const msg = te(err.detail);
+      return msg === path ? err.detail : msg;
+    }
+    return te("generic");
   }
 
   async function handleGenerate() {
     if (!brief.trim()) {
-      setError("Enter an episode idea first.");
+      setError(t("briefRequired"));
       return;
     }
     setGenerating(true);
@@ -63,7 +66,7 @@ export default function ScriptPanel({
       setScript(generated);
       onEpisodeUpdated();
     } catch (err) {
-      setError(friendly(err, "Script generation failed."));
+      setError(friendlyError(err));
     } finally {
       setGenerating(false);
     }
@@ -71,7 +74,7 @@ export default function ScriptPanel({
 
   async function handleAnalyze() {
     if (!script.trim()) {
-      setError("Write or generate a script first.");
+      setError(t("scriptRequired"));
       return;
     }
     setAnalyzing(true);
@@ -80,7 +83,7 @@ export default function ScriptPanel({
       await api.post(`/episodes/${episodeId}/analyze-script`, { script: script.trim() });
       onEpisodeUpdated();
     } catch (err) {
-      setError(friendly(err, "Scene analysis failed."));
+      setError(friendlyError(err));
     } finally {
       setAnalyzing(false);
     }
@@ -90,24 +93,24 @@ export default function ScriptPanel({
 
   return (
     <section className="mb-8 p-4 rounded-2xl flex flex-col gap-3" style={panel}>
-      <h2 className="text-sm font-semibold" style={{ color: "#EDEDEF" }}>Script</h2>
+      <h2 className="text-sm font-semibold" style={{ color: "#EDEDEF" }}>{t("title")}</h2>
 
       <textarea
         className="px-3 py-2 rounded-lg text-sm"
         style={input}
         rows={2}
-        placeholder="Episode idea / brief — a rough idea or a partial script"
+        placeholder={t("briefPlaceholder")}
         value={brief}
         onChange={(e) => setBrief(e.target.value)}
         disabled={busy}
       />
       <div className="flex items-center gap-3">
         <label className="text-xs" style={{ color: "#8A8F98" }} htmlFor="duration-minutes">
-          Target minutes
+          {t("targetMinutes")}
         </label>
         <input
           id="duration-minutes"
-          aria-label="Target minutes"
+          aria-label={t("targetMinutes")}
           type="number"
           min={1}
           max={60}
@@ -126,7 +129,7 @@ export default function ScriptPanel({
           className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
           style={{ background: "linear-gradient(135deg, #6366F1, #4F46E5)", opacity: busy ? 0.6 : 1 }}
         >
-          {generating ? "Generating…" : "Generate script"}
+          {generating ? t("generating") : t("generate")}
         </button>
       </div>
 
@@ -134,7 +137,7 @@ export default function ScriptPanel({
         className="px-3 py-2 rounded-lg text-sm font-mono"
         style={input}
         rows={10}
-        placeholder="The full narration script appears here — edit freely before splitting into scenes. You can also paste a finished script directly."
+        placeholder={t("scriptPlaceholder")}
         value={script}
         onChange={(e) => setScript(e.target.value)}
         disabled={busy}
@@ -148,10 +151,10 @@ export default function ScriptPanel({
           opacity: busy ? 0.6 : 1,
         }}
       >
-        {analyzing ? "Splitting…" : "Split into scenes"}
+        {analyzing ? t("splitting") : t("split")}
       </button>
       <p className="text-xs" style={{ color: "#4A4F5A" }}>
-        Splitting replaces the current scene list and matches each scene to your series assets.
+        {t("splitHint")}
       </p>
 
       {error && <p className="text-sm" style={{ color: "#FCA5A5" }}>{error}</p>}

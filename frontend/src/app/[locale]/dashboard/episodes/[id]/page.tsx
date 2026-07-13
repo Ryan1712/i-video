@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api";
 import ScriptPanel from "@/components/episode/ScriptPanel";
@@ -37,31 +38,11 @@ interface Job {
   error_message: string | null;
 }
 
-function stageLabel(stage: string | null): string {
-  if (!stage) return "Working…";
-  const [phase, count] = stage.split(" ");
-  if (phase === "tts") return `Voice-over ${count ?? ""}`;
-  if (phase === "render") return `Rendering scenes ${count ?? ""}`;
-  if (phase === "assemble") return "Assembling final video…";
-  return stage;
-}
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  draft:     { label: "Draft",     color: "#8A8F98", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
-  building:  { label: "Building…", color: "#F59E0B", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.3)" },
-  built:     { label: "Built",     color: "#10B981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.3)" },
-  uploading: { label: "Uploading…",color: "#818CF8", bg: "rgba(99,102,241,0.1)",  border: "rgba(99,102,241,0.3)" },
-  uploaded:  { label: "Published", color: "#10B981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)" },
-};
-
-const GENERATE_ASSET_ERRORS: Record<string, string> = {
-  ERR_IMAGE_GENERATION_FAILED: "Image generation failed — try again or upload manually.",
-  ERR_NO_SERIES: "This episode has no series — link it to a series to generate images.",
-  ERR_NO_ASSET_BRIEF: "This scene has no missing-image description to generate from.",
-};
-
 export default function EpisodeDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useTranslations("episodes");
+  const td = useTranslations("dashboard");
+  const te = useTranslations("errors");
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -73,6 +54,31 @@ export default function EpisodeDetailPage() {
   const [outputUrl, setOutputUrl] = useState<string | null>(null);
   const [latestJob, setLatestJob] = useState<Job | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+    draft:     { label: td("status.draft"),     color: "#8A8F98", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
+    building:  { label: td("status.building"),  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.3)" },
+    built:     { label: td("status.built"),      color: "#10B981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.3)" },
+    uploading: { label: td("status.uploading"), color: "#818CF8", bg: "rgba(99,102,241,0.1)",  border: "rgba(99,102,241,0.3)" },
+    uploaded:  { label: td("status.uploaded"),   color: "#10B981", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.3)" },
+  };
+
+  // Missing catalog keys resolve to their own dotted path in the Jest mock,
+  // so comparing against that path is how we detect an unmapped ERR_ code.
+  function friendlyError(detail: string): string {
+    const path = `errors.${detail}`;
+    const msg = te(detail);
+    return msg === path ? detail : msg;
+  }
+
+  function stageLabel(stage: string | null): string {
+    if (!stage) return t("stageWorking");
+    const [phase, count] = stage.split(" ");
+    if (phase === "tts") return t("stageTts", { count: count ?? "" });
+    if (phase === "render") return t("stageRender", { count: count ?? "" });
+    if (phase === "assemble") return t("stageAssemble");
+    return stage;
+  }
 
   const fetchEpisode = useCallback(async () => {
     try {
@@ -93,14 +99,15 @@ export default function EpisodeDetailPage() {
       return ep.status;
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
-        setError("Episode not found.");
+        setError(t("notFound"));
       } else {
-        setError("Failed to load episode.");
+        setError(t("loadError"));
       }
       return null;
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, outputUrl]);
 
   useEffect(() => {
@@ -131,7 +138,7 @@ export default function EpisodeDetailPage() {
       if (!res.ok) throw new ApiError(res.status, "Upload failed");
       await fetchEpisode();
     } catch (err) {
-      setJobError(err instanceof ApiError ? err.detail : "Asset upload failed.");
+      setJobError(err instanceof ApiError ? err.detail : t("assetUploadFailed"));
     } finally {
       setUploadingScene(null);
     }
@@ -145,9 +152,9 @@ export default function EpisodeDetailPage() {
       await fetchEpisode();
     } catch (err) {
       if (err instanceof ApiError) {
-        setJobError(GENERATE_ASSET_ERRORS[err.detail] ?? err.detail);
+        setJobError(friendlyError(err.detail));
       } else {
-        setJobError("Image generation failed.");
+        setJobError(t("generateImageFailed"));
       }
     } finally {
       setGeneratingScene(null);
@@ -158,9 +165,7 @@ export default function EpisodeDetailPage() {
     if (
       episode &&
       (episode.status === "built" || episode.status === "uploaded") &&
-      !window.confirm(
-        "This episode is already built. Rebuilding re-runs voice-over for every scene and costs TTS credits. Continue?"
-      )
+      !window.confirm(t("rebuildConfirm"))
     ) {
       return;
     }
@@ -170,7 +175,7 @@ export default function EpisodeDetailPage() {
       await api.post<Job>(`/episodes/${id}/build`, {});
       await fetchEpisode();
     } catch (err) {
-      setJobError(err instanceof ApiError ? err.detail : "Failed to start build.");
+      setJobError(err instanceof ApiError ? err.detail : t("buildStartFailed"));
     } finally {
       setBuilding(false);
     }
@@ -183,10 +188,10 @@ export default function EpisodeDetailPage() {
       await api.post<Job>(`/episodes/${id}/upload`, {});
       await fetchEpisode();
     } catch (err) {
-      if (err instanceof ApiError && err.detail === "ERR_YOUTUBE_NOT_CONNECTED") {
-        setJobError("YouTube not connected. Go to YouTube settings first.");
+      if (err instanceof ApiError) {
+        setJobError(friendlyError(err.detail));
       } else {
-        setJobError(err instanceof ApiError ? err.detail : "Failed to start upload.");
+        setJobError(t("uploadStartFailed"));
       }
     } finally {
       setUploading(false);
@@ -204,7 +209,7 @@ export default function EpisodeDetailPage() {
   if (error || !episode) {
     return (
       <div className="p-8">
-        <p style={{ color: "#FCA5A5" }}>{error || "Episode not found."}</p>
+        <p style={{ color: "#FCA5A5" }}>{error || t("notFound")}</p>
       </div>
     );
   }
@@ -226,7 +231,7 @@ export default function EpisodeDetailPage() {
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        All episodes
+        {t("backToAll")}
       </Link>
 
       {/* Header */}
@@ -269,7 +274,7 @@ export default function EpisodeDetailPage() {
       {/* Scenes */}
       <section className="mb-8">
         <h2 className="text-sm font-semibold mb-3" style={{ color: "#EDEDEF" }}>
-          Scenes — upload an asset image for each
+          {t("scenesTitle")}
         </h2>
         <div className="flex flex-col gap-3">
           {episode.scenes.map((scene) => (
@@ -285,7 +290,7 @@ export default function EpisodeDetailPage() {
                 <p className="text-sm mb-3" style={{ color: "#EDEDEF" }}>{scene.narration_text}</p>
                 {!scene.asset_object_key && scene.asset_brief && (
                   <p className="text-xs mb-2 italic" style={{ color: "#8A8F98" }}>
-                    Missing image: {scene.asset_brief}
+                    {t("missingImage", { brief: scene.asset_brief })}
                   </p>
                 )}
                 <div className="flex items-center gap-3">
@@ -307,7 +312,7 @@ export default function EpisodeDetailPage() {
                       ) : (
                         "✨"
                       )}
-                      Generate image
+                      {t("generateImage")}
                     </button>
                   )}
                   {scene.asset_object_key ? (
@@ -316,7 +321,7 @@ export default function EpisodeDetailPage() {
                         <circle cx="7" cy="7" r="6" fill="rgba(16,185,129,0.15)" stroke="#10B981" strokeWidth="1" />
                         <path d="M4.5 7l2 2 3-3" stroke="#10B981" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                      Asset ready
+                      {t("assetReady")}
                     </span>
                   ) : null}
                   <label
@@ -337,7 +342,7 @@ export default function EpisodeDetailPage() {
                         <path d="M1 10h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                       </svg>
                     )}
-                    {scene.asset_object_key ? "Replace asset" : "Upload asset"}
+                    {scene.asset_object_key ? t("replaceAsset") : t("uploadAsset")}
                     <input
                       type="file"
                       accept="image/*,video/*"
@@ -362,9 +367,9 @@ export default function EpisodeDetailPage() {
 
       {/* Build */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold mb-1" style={{ color: "#EDEDEF" }}>Build video</h2>
+        <h2 className="text-sm font-semibold mb-1" style={{ color: "#EDEDEF" }}>{t("buildTitle")}</h2>
         <p className="text-xs mb-4" style={{ color: "#8A8F98" }}>
-          All scenes need an uploaded asset before building.
+          {t("buildHint")}
         </p>
 
         {episode.status === "building" && (
@@ -392,13 +397,13 @@ export default function EpisodeDetailPage() {
             className="mb-4 px-4 py-3 rounded-xl text-sm flex items-center justify-between gap-4"
             style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#FCA5A5" }}
           >
-            <span>Last build failed: {latestJob.error_message || "unknown error"}</span>
+            <span>{t("lastBuildFailed", { error: latestJob.error_message || t("unknownError") })}</span>
             <button
               onClick={handleBuild}
               className="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg"
               style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.35)", color: "#FCA5A5" }}
             >
-              Retry build
+              {t("retryBuild")}
             </button>
           </div>
         )}
@@ -414,7 +419,7 @@ export default function EpisodeDetailPage() {
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M5 2H3a1 1 0 00-1 1v6a1 1 0 001 1h6a1 1 0 001-1V7M7 2h3v3M10 2L5.5 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            Download output video
+            {t("downloadOutput")}
           </a>
         )}
 
@@ -439,11 +444,11 @@ export default function EpisodeDetailPage() {
               <path d="M6 5l3 2-3 2V5z" fill="currentColor" />
             </svg>
           )}
-          {episode.status === "building" ? "Building…" : "Build episode"}
+          {episode.status === "building" ? t("building") : t("buildButton")}
         </button>
         {!allAssetsReady && (
           <p className="text-xs mt-2" style={{ color: "#4A4F5A" }}>
-            Upload assets for all {episode.scenes.length} scenes to enable build.
+            {t("uploadAllHint", { count: episode.scenes.length })}
           </p>
         )}
       </section>
@@ -453,11 +458,9 @@ export default function EpisodeDetailPage() {
         <>
           <div className="h-px mb-8" style={{ background: "rgba(255,255,255,0.06)" }} />
           <section>
-            <h2 className="text-sm font-semibold mb-1" style={{ color: "#EDEDEF" }}>Publish to YouTube</h2>
+            <h2 className="text-sm font-semibold mb-1" style={{ color: "#EDEDEF" }}>{t("publishTitle")}</h2>
             <p className="text-xs mb-4" style={{ color: "#8A8F98" }}>
-              {episode.status === "uploaded"
-                ? "Episode published to YouTube."
-                : "Upload the built video directly to your connected YouTube channel."}
+              {episode.status === "uploaded" ? t("published") : t("publishHint")}
             </p>
 
             {episode.status === "uploading" && (
@@ -479,7 +482,7 @@ export default function EpisodeDetailPage() {
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
                   <path d="M11.5 3.5s-.15-1-.6-1.4c-.57-.6-1.2-.6-1.5-.6C7.9 1.4 6 1.4 6 1.4s-1.9 0-3.4.1c-.3 0-.93 0-1.5.6-.45.4-.6 1.4-.6 1.4S.4 4.7.4 6v.9c0 1.1.1 2.1.1 2.1s.15 1 .6 1.4c.57.6 1.33.55 1.67.6C3.9 11 6 11 6 11s1.9 0 3.4-.1c.3 0 .93 0 1.5-.6.45-.4.6-1.4.6-1.4s.1-1 .1-2.1V6c0-1.3-.1-2.5-.1-2.5zM4.87 7.9V4.37L8 6.13 4.87 7.9z" />
                 </svg>
-                View on YouTube
+                {t("viewOnYouTube")}
               </a>
             )}
 
@@ -503,7 +506,7 @@ export default function EpisodeDetailPage() {
                     <path d="M13 3.7s-.17-1.2-.7-1.7c-.67-.7-1.4-.7-1.73-.7C8.9 1.2 7 1.2 7 1.2s-1.9 0-3.57.1c-.33 0-1.06 0-1.73.7-.53.5-.7 1.7-.7 1.7S.8 5.1.8 6.4V7.5c0 1.3.2 2.6.2 2.6s.17 1.2.7 1.7c.67.7 1.53.65 1.93.7C4.9 12.6 7 12.6 7 12.6s1.9 0 3.57-.1c.33 0 1.06 0 1.73-.7.53-.5.7-1.7.7-1.7s.2-1.3.2-2.6V6.4c0-1.3-.2-2.7-.2-2.7zM5.6 9.3V5.1l4.7 2.1-4.7 2.1z" />
                   </svg>
                 )}
-                {episode.status === "uploading" ? "Uploading…" : "Publish to YouTube"}
+                {uploading || episode.status === "uploading" ? td("status.uploading") : t("publishButton")}
               </button>
             )}
           </section>

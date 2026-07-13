@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { api, ApiError } from "@/lib/api";
 
 interface Subscription {
@@ -9,29 +10,19 @@ interface Subscription {
   current_period_end: string | null;
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  trialing: { label: "Trial",    color: "#818CF8", bg: "rgba(99,102,241,0.1)",  border: "rgba(99,102,241,0.25)" },
-  active:   { label: "Active",   color: "#10B981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.25)" },
-  past_due: { label: "Past due", color: "#F59E0B", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.25)" },
-  canceled: { label: "Canceled", color: "#8A8F98", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
+const PLAN_KEYS = ["creator", "studio"] as const;
+const FEATURE_COUNTS: Record<(typeof PLAN_KEYS)[number], number> = {
+  creator: 4,
+  studio: 4,
+};
+const HIGHLIGHT: Record<(typeof PLAN_KEYS)[number], boolean> = {
+  creator: true,
+  studio: false,
 };
 
-const PLANS = [
-  {
-    name: "Creator",
-    price: "$19/mo",
-    features: ["10 episodes/month", "1080p output", "YouTube publish", "Priority render"],
-    highlight: true,
-  },
-  {
-    name: "Studio",
-    price: "$49/mo",
-    features: ["Unlimited episodes", "4K output", "Multi-platform", "Custom branding"],
-    highlight: false,
-  },
-];
-
 export default function BillingPage() {
+  const t = useTranslations("billing");
+  const tc = useTranslations("common");
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [noSub, setNoSub] = useState(false);
@@ -46,15 +37,30 @@ export default function BillingPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const STATUS_LABELS: Record<string, { label: string; color: string; bg: string; border: string }> = {
+    trialing: { label: t("status.trialing"), color: "#818CF8", bg: "rgba(99,102,241,0.1)",  border: "rgba(99,102,241,0.25)" },
+    active:   { label: t("status.active"),   color: "#10B981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.25)" },
+    past_due: { label: t("status.pastDue"),  color: "#F59E0B", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.25)" },
+    canceled: { label: t("status.canceled"), color: "#8A8F98", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
+  };
+
+  const plans = PLAN_KEYS.map((key) => ({
+    key,
+    name: t(`plans.${key}.name`),
+    price: t(`plans.${key}.price`),
+    features: Array.from({ length: FEATURE_COUNTS[key] }, (_, i) => t(`plans.${key}.features.${i}`)),
+    highlight: HIGHLIGHT[key],
+  }));
+
   const statusCfg = sub ? (STATUS_LABELS[sub.status] ?? STATUS_LABELS.canceled) : null;
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: "#EDEDEF" }}>
-        Billing
+        {t("title")}
       </h1>
       <p className="text-sm mb-8" style={{ color: "#8A8F98" }}>
-        Manage your plan and subscription.
+        {t("subtitle")}
       </p>
 
       {/* Current plan */}
@@ -63,27 +69,27 @@ export default function BillingPage() {
         style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
       >
         <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#4A4F5A" }}>
-          Current plan
+          {t("currentPlan")}
         </p>
 
         {loading && (
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "#6366F1", borderTopColor: "transparent" }} />
-            <span className="text-sm" style={{ color: "#8A8F98" }}>Loading…</span>
+            <span className="text-sm" style={{ color: "#8A8F98" }}>{tc("loading")}</span>
           </div>
         )}
 
         {!loading && (noSub || !sub) && (
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold text-sm" style={{ color: "#EDEDEF" }}>Free</p>
-              <p className="text-xs mt-0.5" style={{ color: "#8A8F98" }}>1 episode per month · Watermarked output</p>
+              <p className="font-semibold text-sm" style={{ color: "#EDEDEF" }}>{t("free")}</p>
+              <p className="text-xs mt-0.5" style={{ color: "#8A8F98" }}>{t("freeDescription")}</p>
             </div>
             <span
               className="text-xs font-medium px-2.5 py-1 rounded-full"
               style={{ background: "rgba(255,255,255,0.05)", color: "#8A8F98", border: "1px solid rgba(255,255,255,0.1)" }}
             >
-              Free
+              {t("free")}
             </span>
           </div>
         )}
@@ -92,10 +98,12 @@ export default function BillingPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="font-semibold text-sm" style={{ color: "#EDEDEF" }}>Plan #{sub.plan_id}</p>
+                <p className="font-semibold text-sm" style={{ color: "#EDEDEF" }}>{t("planNumber", { id: sub.plan_id })}</p>
                 {sub.current_period_end && (
                   <p className="text-xs mt-0.5" style={{ color: "#8A8F98" }}>
-                    Renews {new Date(sub.current_period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    {t("renews", {
+                      date: new Date(sub.current_period_end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                    })}
                   </p>
                 )}
               </div>
@@ -112,12 +120,12 @@ export default function BillingPage() {
 
       {/* Upgrade plans */}
       <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "#4A4F5A" }}>
-        Upgrade your plan
+        {t("upgradeTitle")}
       </p>
       <div className="grid grid-cols-2 gap-4 mb-6">
-        {PLANS.map((plan) => (
+        {plans.map((plan) => (
           <div
-            key={plan.name}
+            key={plan.key}
             className="p-5 rounded-2xl flex flex-col"
             style={{
               background: plan.highlight ? "rgba(99,102,241,0.08)" : "rgba(255,255,255,0.03)",
@@ -150,7 +158,7 @@ export default function BillingPage() {
                 color: plan.highlight ? "white" : "#EDEDEF",
                 boxShadow: plan.highlight ? "0 0 16px rgba(99,102,241,0.3)" : "none",
               }}
-              onClick={() => alert(`Contact us to upgrade to ${plan.name}. Stripe integration coming soon.`)}
+              onClick={() => alert(t("upgradeAlert", { name: plan.name }))}
               onMouseEnter={(e) => {
                 if (!plan.highlight) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)";
               }}
@@ -158,14 +166,14 @@ export default function BillingPage() {
                 if (!plan.highlight) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)";
               }}
             >
-              Get {plan.name}
+              {t("getPlan", { name: plan.name })}
             </button>
           </div>
         ))}
       </div>
 
       <p className="text-xs text-center" style={{ color: "#4A4F5A" }}>
-        Payments processed securely via Stripe. Cancel anytime.
+        {t("paymentsFooter")}
       </p>
     </div>
   );

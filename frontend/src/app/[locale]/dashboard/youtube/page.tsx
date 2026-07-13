@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { api, ApiError } from "@/lib/api";
 
 interface YouTubeStatus {
@@ -10,6 +11,7 @@ interface YouTubeStatus {
 }
 
 export default function YouTubePage() {
+  const t = useTranslations("youtube");
   const [status, setStatus] = useState<YouTubeStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -20,8 +22,9 @@ export default function YouTubePage() {
     api
       .get<YouTubeStatus>("/youtube/status")
       .then(setStatus)
-      .catch(() => setError("Failed to load YouTube status."))
+      .catch(() => setError(t("loadError")))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleConnect() {
@@ -31,20 +34,20 @@ export default function YouTubePage() {
       const { url } = await api.get<{ url: string }>("/youtube/connect");
       window.location.href = url;
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Failed to start YouTube connection.");
+      setError(err instanceof ApiError ? err.detail : t("connectFailed"));
       setConnecting(false);
     }
   }
 
   async function handleDisconnect() {
-    if (!confirm("Disconnect your YouTube channel?")) return;
+    if (!confirm(t("disconnectConfirm"))) return;
     setError("");
     setDisconnecting(true);
     try {
       await api.delete("/youtube/disconnect");
       setStatus({ connected: false, channel_id: null, channel_title: null });
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Failed to disconnect.");
+      setError(err instanceof ApiError ? err.detail : t("disconnectFailed"));
     } finally {
       setDisconnecting(false);
     }
@@ -53,10 +56,10 @@ export default function YouTubePage() {
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: "#EDEDEF" }}>
-        YouTube
+        {t("title")}
       </h1>
       <p className="text-sm mb-8" style={{ color: "#8A8F98" }}>
-        Connect your YouTube channel to publish episodes automatically.
+        {t("subtitle")}
       </p>
 
       {loading && (
@@ -91,7 +94,7 @@ export default function YouTubePage() {
                   </p>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ boxShadow: "0 0 6px #10B981" }} />
-                    <span className="text-xs" style={{ color: "#10B981" }}>Connected</span>
+                    <span className="text-xs" style={{ color: "#10B981" }}>{t("connected")}</span>
                   </div>
                 </div>
               </div>
@@ -109,7 +112,7 @@ export default function YouTubePage() {
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.15)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,0.08)"; }}
               >
-                {disconnecting ? "Disconnecting…" : "Disconnect"}
+                {disconnecting ? t("disconnecting") : t("disconnect")}
               </button>
             </div>
           ) : (
@@ -123,10 +126,10 @@ export default function YouTubePage() {
                 </svg>
               </div>
               <h3 className="text-base font-semibold mb-2" style={{ color: "#EDEDEF" }}>
-                Connect your YouTube channel
+                {t("connectTitle")}
               </h3>
               <p className="text-sm mb-6 max-w-xs" style={{ color: "#8A8F98" }}>
-                Publish episodes directly to YouTube with one click. You&apos;ll be redirected to Google to authorize access.
+                {t("connectBody")}
               </p>
               <button
                 onClick={handleConnect}
@@ -145,7 +148,7 @@ export default function YouTubePage() {
                     <path d="M14.8 4.5s-.2-1.4-.82-2.05C13.2.75 12.42.75 12.07.75 10.1.6 8 .6 8 .6s-2.1 0-4.07.15c-.35 0-1.13 0-1.91.82C1.4 2.12 1.2 3.5 1.2 3.5S1 5.1 1 6.7v1.3c0 1.6.2 3.2.2 3.2s.2 1.4.82 2.05c.78.77 1.8.74 2.25.83C5.6 14.2 8 14.2 8 14.2s2.1 0 4.07-.17c.35 0 1.13 0 1.91-.83.62-.62.82-2.05.82-2.05s.2-1.6.2-3.2V6.7c0-1.6-.2-3.2-.2-3.2zM6.5 10.3V5.7L10.3 8 6.5 10.3z" />
                   </svg>
                 )}
-                {connecting ? "Redirecting to Google…" : "Connect YouTube"}
+                {connecting ? t("redirecting") : t("connect")}
               </button>
             </div>
           )}
@@ -168,7 +171,7 @@ export default function YouTubePage() {
           <path d="M7 6v4M7 4.5v.5" stroke="#818CF8" strokeWidth="1.2" strokeLinecap="round" />
         </svg>
         <p className="text-xs leading-relaxed" style={{ color: "#818CF8" }}>
-          Narro requests upload-only access to your YouTube account. We never read your existing videos or access your account data.
+          {t("infoText")}
         </p>
       </div>
     </div>

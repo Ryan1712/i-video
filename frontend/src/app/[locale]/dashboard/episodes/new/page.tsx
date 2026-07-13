@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api";
 
@@ -18,6 +19,7 @@ export default function NewEpisodePage() {
 }
 
 function NewEpisodeInner() {
+  const t = useTranslations("episodes.new");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [seriesList, setSeriesList] = useState<{ id: number; name: string }[]>([]);
@@ -50,7 +52,7 @@ function NewEpisodeInner() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (scenes.some((s) => !s.narration_text.trim())) {
-      setError("All scenes need narration text.");
+      setError(t("narrationRequired"));
       return;
     }
     setError("");
@@ -65,7 +67,7 @@ function NewEpisodeInner() {
       });
       router.push(`/dashboard/episodes/${ep.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Failed to create episode.");
+      setError(err instanceof ApiError ? err.detail : t("createFailed"));
     } finally {
       setLoading(false);
     }
@@ -90,14 +92,14 @@ function NewEpisodeInner() {
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        Back to episodes
+        {t("backToEpisodes")}
       </Link>
 
       <h1 className="text-2xl font-bold tracking-tight mb-1" style={{ color: "#EDEDEF" }}>
-        New episode
+        {t("title")}
       </h1>
       <p className="text-sm mb-8" style={{ color: "#8A8F98" }}>
-        Create your What If scenario and add scenes.
+        {t("subtitle")}
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
@@ -106,9 +108,9 @@ function NewEpisodeInner() {
           style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#EDEDEF" }}
           value={seriesId ?? ""}
           onChange={(e) => setSeriesId(e.target.value ? Number(e.target.value) : null)}
-          aria-label="Series"
+          aria-label={t("seriesLabel")}
         >
-          <option value="">No series (standalone)</option>
+          <option value="">{t("noSeries")}</option>
           {seriesList.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
@@ -116,12 +118,12 @@ function NewEpisodeInner() {
 
         {/* Title */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>Title *</label>
+          <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>{t("titleLabel")} *</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="What If the Internet Went Dark?"
+            placeholder={t("titlePlaceholder")}
             required
             className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
             style={inputStyle}
@@ -132,11 +134,11 @@ function NewEpisodeInner() {
 
         {/* Description */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>Description</label>
+          <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>{t("descriptionLabel")}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="A short description for YouTube..."
+            placeholder={t("descriptionPlaceholder")}
             rows={3}
             className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 resize-none"
             style={inputStyle}
@@ -147,12 +149,12 @@ function NewEpisodeInner() {
 
         {/* Tags */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>Tags (comma-separated)</label>
+          <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>{t("tagsLabel")}</label>
           <input
             type="text"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="whatif, technology, society"
+            placeholder={t("tagsPlaceholder")}
             className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
             style={inputStyle}
             onFocus={(e) => { e.currentTarget.style.border = "1px solid rgba(99,102,241,0.5)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.1)"; }}
@@ -164,7 +166,7 @@ function NewEpisodeInner() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>
-              Scenes ({scenes.length})
+              {t("scenesCount", { count: scenes.length })}
             </label>
             <button
               type="button"
@@ -175,7 +177,7 @@ function NewEpisodeInner() {
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
-              Add scene
+              {t("addScene")}
             </button>
           </div>
           <div className="flex flex-col gap-3">
@@ -193,7 +195,7 @@ function NewEpisodeInner() {
                 <textarea
                   value={scene.narration_text}
                   onChange={(e) => updateScene(i, e.target.value)}
-                  placeholder={`Narration for scene ${i + 1}…`}
+                  placeholder={t("narrationPlaceholder", { n: i + 1 })}
                   required
                   rows={2}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 resize-none"
@@ -234,7 +236,7 @@ function NewEpisodeInner() {
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Creating…" : "Create episode"}
+          {loading ? t("creating") : t("create")}
         </button>
       </form>
     </div>

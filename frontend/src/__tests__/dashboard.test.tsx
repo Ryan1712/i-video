@@ -66,7 +66,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     await waitFor(() =>
-      expect(screen.getByText("No episodes yet")).toBeInTheDocument()
+      expect(screen.getByText("No episodes yet.")).toBeInTheDocument()
     );
   });
 

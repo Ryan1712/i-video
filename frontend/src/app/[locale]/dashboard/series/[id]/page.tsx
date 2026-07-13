@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { api, ApiError } from "@/lib/api";
 
@@ -37,6 +38,9 @@ const input = {
 
 export default function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useTranslations("series");
+  const tc = useTranslations("common");
+  const td = useTranslations("dashboard");
   const [series, setSeries] = useState<Series | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [episodes, setEpisodes] = useState<EpisodeListItem[]>([]);
@@ -57,8 +61,9 @@ export default function SeriesDetailPage() {
       setAssets(a);
       setEpisodes(eps);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 404 ? "Series not found." : "Failed to load series.");
+      setError(err instanceof ApiError && err.status === 404 ? t("notFound") : t("loadError"));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -67,7 +72,7 @@ export default function SeriesDetailPage() {
 
   async function handleUpload(file: File) {
     if (!assetName.trim()) {
-      setError("Asset name is required (the AI matches scenes to assets by name + description).");
+      setError(t("assetNameRequired"));
       return;
     }
     setUploading(true);
@@ -89,27 +94,27 @@ export default function SeriesDetailPage() {
       setAssetDescription("");
       await refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.detail : "Asset upload failed.");
+      setError(err instanceof ApiError ? err.detail : t("assetUploadFailed"));
     } finally {
       setUploading(false);
     }
   }
 
   if (error && !series) return <div className="p-8"><p style={{ color: "#FCA5A5" }}>{error}</p></div>;
-  if (!series) return <div className="p-8"><p style={{ color: "#8A8F98" }}>Loading…</p></div>;
+  if (!series) return <div className="p-8"><p style={{ color: "#8A8F98" }}>{tc("loading")}</p></div>;
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <Link href="/dashboard/series" className="text-sm mb-6 block w-fit" style={{ color: "#8A8F98" }}>
-        ← All series
+        ← {t("backToAll")}
       </Link>
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "#EDEDEF" }}>{series.name}</h1>
           {series.description && <p className="text-sm mt-1" style={{ color: "#8A8F98" }}>{series.description}</p>}
           <p className="text-xs mt-2" style={{ color: "#4A4F5A" }}>
-            Language: {series.style.language ?? "en"}
-            {series.style.image_style_bible ? ` · Style: ${series.style.image_style_bible}` : ""}
+            {t("metaLanguage", { lang: series.style.language ?? "en" })}
+            {series.style.image_style_bible ? ` · ${t("metaStyle", { style: series.style.image_style_bible })}` : ""}
           </p>
         </div>
         <Link
@@ -117,33 +122,33 @@ export default function SeriesDetailPage() {
           className="px-4 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0"
           style={{ background: "linear-gradient(135deg, #6366F1, #4F46E5)" }}
         >
-          New episode
+          {t("newEpisode")}
         </Link>
       </div>
 
       <section className="mb-8">
         <h2 className="text-sm font-semibold mb-3" style={{ color: "#EDEDEF" }}>
-          Shared assets ({assets.length})
+          {t("assetsTitle", { count: assets.length })}
         </h2>
         <div className="p-4 rounded-2xl mb-4 flex flex-col gap-3" style={panel}>
           <div className="flex gap-3">
             <input className="px-3 py-2 rounded-lg text-sm flex-1" style={input}
-              placeholder="Asset name (e.g. main_character)" value={assetName}
+              placeholder={t("assetName")} value={assetName}
               onChange={(e) => setAssetName(e.target.value)} />
             <select className="px-3 py-2 rounded-lg text-sm" style={input} value={assetKind}
-              onChange={(e) => setAssetKind(e.target.value)} aria-label="Kind">
-              <option value="character">character</option>
-              <option value="location">location</option>
-              <option value="object">object</option>
-              <option value="other">other</option>
+              onChange={(e) => setAssetKind(e.target.value)} aria-label={t("assetKindLabel")}>
+              <option value="character">{t("assetKind.character")}</option>
+              <option value="location">{t("assetKind.location")}</option>
+              <option value="object">{t("assetKind.object")}</option>
+              <option value="other">{t("assetKind.other")}</option>
             </select>
           </div>
           <input className="px-3 py-2 rounded-lg text-sm" style={input}
-            placeholder="Description — what is in this image (the AI matches scenes by this)"
+            placeholder={t("assetDescription")}
             value={assetDescription} onChange={(e) => setAssetDescription(e.target.value)} />
           <label className="px-4 py-2 rounded-xl text-sm font-semibold text-white w-fit cursor-pointer"
             style={{ background: "linear-gradient(135deg, #6366F1, #4F46E5)", opacity: uploading ? 0.6 : 1 }}>
-            {uploading ? "Uploading…" : "Upload image"}
+            {uploading ? t("uploading") : t("uploadImage")}
             <input type="file" accept="image/*" className="hidden" disabled={uploading}
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -161,7 +166,7 @@ export default function SeriesDetailPage() {
                   background: a.source === "generated" ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.06)",
                   color: a.source === "generated" ? "#818CF8" : "#8A8F98",
                 }}>
-                  {a.source === "generated" ? "AI" : a.kind}
+                  {a.source === "generated" ? t("aiGenerated") : t(`assetKind.${a.kind}`)}
                 </span>
               </p>
               {a.description && <p className="text-xs mt-1" style={{ color: "#8A8F98" }}>{a.description}</p>}
@@ -171,16 +176,16 @@ export default function SeriesDetailPage() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold mb-3" style={{ color: "#EDEDEF" }}>Episodes</h2>
+        <h2 className="text-sm font-semibold mb-3" style={{ color: "#EDEDEF" }}>{t("episodesTitle")}</h2>
         <div className="flex flex-col gap-2">
           {episodes.map((ep) => (
             <Link key={ep.id} href={`/dashboard/episodes/${ep.id}`}
               className="p-3 rounded-xl flex items-center justify-between" style={panel}>
               <span className="text-sm" style={{ color: "#EDEDEF" }}>{ep.title}</span>
-              <span className="text-xs" style={{ color: "#8A8F98" }}>{ep.status}</span>
+              <span className="text-xs" style={{ color: "#8A8F98" }}>{td(`status.${ep.status}`)}</span>
             </Link>
           ))}
-          {episodes.length === 0 && <p className="text-sm" style={{ color: "#8A8F98" }}>No episodes yet.</p>}
+          {episodes.length === 0 && <p className="text-sm" style={{ color: "#8A8F98" }}>{t("noEpisodes")}</p>}
         </div>
       </section>
 

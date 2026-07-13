@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { login } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 
 export default function LoginPage() {
+  const t = useTranslations("auth");
+  const te = useTranslations("errors");
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,9 +24,9 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.status === 401 ? "Invalid email or password." : err.detail);
+        setError(err.status === 401 ? t("invalidCredentials") : err.detail);
       } else {
-        setError("Something went wrong. Please try again.");
+        setError(te("generic"));
       }
     } finally {
       setLoading(false);
@@ -46,22 +49,22 @@ export default function LoginPage() {
           className="text-2xl font-bold tracking-tight mb-1"
           style={{ color: "#EDEDEF" }}
         >
-          Welcome back
+          {t("loginTitle")}
         </h1>
         <p className="text-sm mb-8" style={{ color: "#8A8F98" }}>
-          Sign in to continue making videos
+          {t("loginSubtitle")}
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>
-              Email
+              {t("email")}
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t("emailPlaceholder")}
               required
               autoComplete="email"
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
@@ -84,7 +87,7 @@ export default function LoginPage() {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium" style={{ color: "#8A8F98" }}>
-                Password
+                {t("password")}
               </label>
               <a
                 href="#"
@@ -93,14 +96,14 @@ export default function LoginPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#818CF8")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#6366F1")}
               >
-                Forgot password?
+                {t("forgotPassword")}
               </a>
             </div>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t("passwordPlaceholder")}
               required
               autoComplete="current-password"
               className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
@@ -145,12 +148,12 @@ export default function LoginPage() {
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? t("loggingIn") : t("loginButton")}
           </button>
         </form>
 
         <p className="text-center text-sm mt-6" style={{ color: "#8A8F98" }}>
-          Don&apos;t have an account?{" "}
+          {t("noAccount")}{" "}
           <Link
             href="/signup"
             className="font-medium transition-colors"
@@ -158,7 +161,7 @@ export default function LoginPage() {
             onMouseEnter={(e) => (e.currentTarget.style.color = "#6366F1")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#818CF8")}
           >
-            Sign up free
+            {t("signUpFree")}
           </Link>
         </p>
       </div>
