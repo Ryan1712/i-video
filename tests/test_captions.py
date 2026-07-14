@@ -1,6 +1,6 @@
 import pytest
 
-from agent_video.captions import build_srt
+from agent_video.captions import _split_into_cues, build_srt
 from agent_video.script_parser import Episode, Scene
 
 
@@ -49,6 +49,20 @@ def test_long_scene_text_splits_into_multiple_timed_cues(tmp_path):
     assert "This is a much longer second sentence" in blocks[1]
     # Last cue ends exactly at the scene duration (no drift from proportional splits).
     assert blocks[1].splitlines()[1].endswith("--> 00:00:10,000")
+
+
+def test_split_into_cues_caps_every_cue_even_without_commas():
+    # A single comma-delimited segment longer than max_chars must still be
+    # wrapped, not emitted whole (that let 80+ char lines through uncapped).
+    text = (
+        "But when hundreds of thousands of people think the same thing on the "
+        "same morning, the result is a nightmare traffic jam"
+    )
+    cues = _split_into_cues(text, max_chars=55)
+    assert cues  # non-empty
+    for cue in cues:
+        assert len(cue) <= 55, cue
+    assert " ".join(cues) == text
 
 
 def test_mismatched_durations_length_raises():

@@ -6,10 +6,27 @@ import re
 from .script_parser import Episode
 
 # Roughly the longest chunk that still reads as 1-2 lines when burned in at the
-# configured caption font size on a 1920px-wide frame — long uncut scene text
-# was wrapping into 6+ lines and covering most of the image.
-_MAX_CUE_CHARS = 90
+# configured caption font size (34px) on a 1920px-wide frame — long uncut scene
+# text was wrapping into 6+ lines and covering most of the image. Measured
+# empirically: ~48px font wraps at ~20 chars/line, so keep real margin here.
+_MAX_CUE_CHARS = 55
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+")
+
+
+def _wrap_words(text: str, max_chars: int) -> list[str]:
+    """Greedy word-wrap that guarantees every line is at most max_chars."""
+    lines: list[str] = []
+    line = ""
+    for word in text.split():
+        candidate = f"{line} {word}".strip()
+        if line and len(candidate) > max_chars:
+            lines.append(line)
+            line = word
+        else:
+            line = candidate
+    if line:
+        lines.append(line)
+    return lines
 
 
 def _split_into_cues(text: str, max_chars: int = _MAX_CUE_CHARS) -> list[str]:
@@ -22,20 +39,8 @@ def _split_into_cues(text: str, max_chars: int = _MAX_CUE_CHARS) -> list[str]:
     for sentence in sentences:
         if len(sentence) <= max_chars:
             cues.append(sentence)
-            continue
-        # A single sentence is still too long to read comfortably — break on
-        # commas instead, since Vietnamese/English both use them as pause points.
-        chunk = ""
-        for part in sentence.split(","):
-            piece = part.strip()
-            candidate = f"{chunk}, {piece}" if chunk else piece
-            if chunk and len(candidate) > max_chars:
-                cues.append(chunk)
-                chunk = piece
-            else:
-                chunk = candidate
-        if chunk:
-            cues.append(chunk)
+        else:
+            cues.extend(_wrap_words(sentence, max_chars))
     return cues
 
 

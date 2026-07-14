@@ -9,7 +9,7 @@ DEFAULT_CONFIG = {
     "video": {"width": 1920, "height": 1080, "fps": 30},
     "ken_burns": {"zoom_start": 1.0, "zoom_end": 1.15, "speed": 0.0008},
     "audio": {"music_volume": 0.18},
-    "caption": {"font": "Arial", "font_size": 48},
+    "caption": {"font": "Arial", "font_size": 34},
 }
 
 
