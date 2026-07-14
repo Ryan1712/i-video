@@ -19,8 +19,10 @@ def analyze_script(script: str, language: str, asset_catalog: list[dict]) -> lis
         "For each scene pick the best-matching asset id from the catalog, or null "
         "if none fits. When asset_id is null, write asset_brief: a detailed, "
         "self-contained ENGLISH image-generation prompt for the missing image "
-        "(subject, setting, mood, composition). Keep the narration text verbatim — "
-        "do not rewrite it, only split it.\n"
+        "(subject, setting, mood, composition). The image is generated at a 3:2 ratio "
+        "then center-cropped to 16:9 video, trimming roughly the top and bottom 8% — "
+        "keep faces and key subjects vertically centered, not near the top or bottom edge. "
+        "Keep the narration text verbatim — do not rewrite it, only split it.\n"
         'Reply with ONLY JSON: {"scenes": [{"narration_text": str, '
         '"asset_id": int | null, "asset_brief": str | null}]}'
     )
