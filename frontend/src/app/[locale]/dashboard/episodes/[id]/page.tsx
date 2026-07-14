@@ -122,6 +122,9 @@ export default function EpisodeDetailPage() {
       pollRef.current = setInterval(() => fetchEpisode(), 3000);
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    // Deliberately keyed on episode?.status (not the whole `episode` object) so the
+    // interval only resets when the status transitions, not on every poll's refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episode?.status, fetchEpisode]);
 
   async function handleAssetUpload(scene: Scene, file: File) {
@@ -217,6 +220,9 @@ export default function EpisodeDetailPage() {
   const cfg = STATUS_CONFIG[episode.status] ?? STATUS_CONFIG.draft;
   const allAssetsReady = episode.scenes.length > 0 && episode.scenes.every((s) => s.asset_object_key);
   const isBusy = episode.status === "building" || episode.status === "uploading";
+  // Computed outside the "built"|"uploaded" JSX guard below so TS doesn't narrow
+  // episode.status there and flag these "uploading" checks as unreachable (TS2367).
+  const isUploadingStatus = episode.status === "uploading";
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
@@ -463,7 +469,7 @@ export default function EpisodeDetailPage() {
               {episode.status === "uploaded" ? t("published") : t("publishHint")}
             </p>
 
-            {episode.status === "uploading" && (
+            {isUploadingStatus && (
               <div className="mb-4">
                 <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
                   <div className="h-full rounded-full" style={{ width: "60%", background: "linear-gradient(90deg, #818CF8, #6366F1)", animation: "shimmer 1.5s linear infinite", backgroundSize: "200% 100%" }} />
@@ -489,14 +495,14 @@ export default function EpisodeDetailPage() {
             {episode.status !== "uploaded" && (
               <button
                 onClick={handleUploadYouTube}
-                disabled={uploading || episode.status === "uploading"}
+                disabled={uploading || isUploadingStatus}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200"
                 style={{
-                  background: episode.status === "uploading" || uploading
+                  background: isUploadingStatus || uploading
                     ? "rgba(99,102,241,0.25)"
                     : "linear-gradient(135deg, #EF4444, #DC2626)",
-                  boxShadow: episode.status === "uploading" || uploading ? "none" : "0 0 20px rgba(239,68,68,0.25)",
-                  cursor: episode.status === "uploading" || uploading ? "not-allowed" : "pointer",
+                  boxShadow: isUploadingStatus || uploading ? "none" : "0 0 20px rgba(239,68,68,0.25)",
+                  cursor: isUploadingStatus || uploading ? "not-allowed" : "pointer",
                 }}
               >
                 {uploading ? (
@@ -506,7 +512,7 @@ export default function EpisodeDetailPage() {
                     <path d="M13 3.7s-.17-1.2-.7-1.7c-.67-.7-1.4-.7-1.73-.7C8.9 1.2 7 1.2 7 1.2s-1.9 0-3.57.1c-.33 0-1.06 0-1.73.7-.53.5-.7 1.7-.7 1.7S.8 5.1.8 6.4V7.5c0 1.3.2 2.6.2 2.6s.17 1.2.7 1.7c.67.7 1.53.65 1.93.7C4.9 12.6 7 12.6 7 12.6s1.9 0 3.57-.1c.33 0 1.06 0 1.73-.7.53-.5.7-1.7.7-1.7s.2-1.3.2-2.6V6.4c0-1.3-.2-2.7-.2-2.7zM5.6 9.3V5.1l4.7 2.1-4.7 2.1z" />
                   </svg>
                 )}
-                {uploading || episode.status === "uploading" ? td("status.uploading") : t("publishButton")}
+                {uploading || isUploadingStatus ? td("status.uploading") : t("publishButton")}
               </button>
             )}
           </section>

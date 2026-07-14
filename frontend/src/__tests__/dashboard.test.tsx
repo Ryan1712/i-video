@@ -80,7 +80,6 @@ describe("DashboardPage", () => {
   });
 
   it("redirects to login on 401", async () => {
-    const assign = jest.fn();
     Object.defineProperty(window, "location", { value: { href: "" }, writable: true });
     mockedApi.get.mockRejectedValueOnce(new ApiError(401, "Unauthorized"));
     render(<DashboardPage />);

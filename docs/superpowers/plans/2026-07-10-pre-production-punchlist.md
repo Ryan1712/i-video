@@ -7,6 +7,10 @@ Các mục KHÔNG chặn merge Phase 1, nhưng PHẢI xử lý trước khi depl
 1. **Quota/rate-limit cho 3 endpoint AI trả phí** (`generate-script`, `analyze-script`, `generate-asset`): hiện user free có thể loop không giới hạn, đốt Anthropic/OpenAI key của platform. Gắn vào plan limits (Phase 4 spec v3 đã dự trù "số ảnh sinh/tháng").
 2. **Gọi ngoài đồng bộ trong request handler**: script generation + image generation chạy sync trong API request; nginx prod (`proxy_read_timeout` 60s) sẽ giết request. Chuyển sang Celery job (nhất quán với build flow) hoặc tối thiểu nâng timeout nginx cho các route này.
 
+## Việc đầu tiên NGAY SAU EP 1 (user chốt 2026-07-13)
+
+0. **Voice picker + series settings**: `GET /voices` (proxy API provider, cache, lọc theo ngôn ngữ) + dropdown chọn giọng kèm nút nghe thử trong form series + `PUT /series/{id}` để sửa style sau khi tạo. Lý do: hiện phải dán raw voice ID — trải nghiệm dev, không bán được cho user thường.
+
 ## Nên xử lý sớm (trước/trong khi làm EP 1)
 
 3. **`IMAGE_SIZE` mặc định `1536x1024` (3:2) không khớp khung video 16:9** — ảnh sinh ra sẽ bị crop/letterbox bởi pipeline ffmpeg. Quyết định trước khi sinh ảnh cho EP 1 (cân nhắc 1792x1024 nếu model hỗ trợ, hoặc chấp nhận crop Ken Burns).
