@@ -158,6 +158,22 @@ def test_generate_asset_requires_brief(client, monkeypatch):
     assert resp.json()["detail"] == "ERR_NO_ASSET_BRIEF"
 
 
+def test_generate_asset_conflicts_when_not_draft(client, monkeypatch):
+    headers = _auth(client)
+    sid, ep_id, scene_id = _episode_with_brief_scene(client, headers, monkeypatch)
+
+    from saas.models import Episode
+    db = client.app.dependency_overrides[get_db]().__next__()
+    db.query(Episode).filter_by(id=ep_id).update({"status": "built"})
+    db.commit()
+
+    resp = client.post(
+        f"/episodes/{ep_id}/scenes/{scene_id}/generate-asset", headers=headers
+    )
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "ERR_EPISODE_NOT_DRAFT"
+
+
 def test_generate_asset_requires_series(client, monkeypatch):
     headers = _auth(client)
     ep = client.post(

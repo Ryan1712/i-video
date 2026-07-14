@@ -15,7 +15,7 @@ Các mục KHÔNG chặn merge Phase 1, nhưng PHẢI xử lý trước khi depl
 
 3. ~~**`IMAGE_SIZE` mặc định `1536x1024` (3:2) không khớp khung video 16:9**~~ — **Đã quyết (2026-07-14): giữ nguyên `1536x1024`.** `gpt-image-1` chỉ hỗ trợ `1024x1024` / `1536x1024` / `1024x1536` / `auto` — không có `1792x1024` (đó là size của DALL-E 3, không áp dụng). `1536x1024` (tỉ lệ 1.5) là lựa chọn gần 16:9 (1.778) nhất trong các size hỗ trợ. Pipeline (`agent_video/image_builder.py::_cover_resize`) đã center-crop "cover" (không letterbox), chỉ cắt ~8% mép trên/dưới. Đã thêm hint vào system prompt của `analyze_script` (`saas/ai/script_analysis.py`) yêu cầu model giữ chủ thể/mặt nhân vật ở giữa khung dọc để tránh bị cắt.
 4. **Scene bị thay khi re-analyze để rò object S3** (`episodes/{id}/scenes/{scene_id}.png` mồ côi); generate-asset lặp lại trên cùng scene tạo SeriesAsset + object mới mỗi lần (rác catalog). Cần chiến lược dọn.
-5. **`generate-script` và `generate-asset` thiếu draft guard** — có thể ghi đè script/scene của episode đã built/uploading.
+5. ~~**`generate-script` và `generate-asset` thiếu draft guard**~~ — **Đã sửa (2026-07-14):** cả 2 endpoint (`saas/routers/episodes.py`) giờ trả `409 ERR_EPISODE_NOT_DRAFT` nếu `episode.status != "draft"`, cùng pattern với `analyze-script` đã có sẵn. Frontend không cần sửa: `ScriptPanel` đã disable khi episode không phải draft và `errors.ERR_EPISODE_NOT_DRAFT` đã có sẵn trong catalog i18n.
 
 ## Theo dõi
 

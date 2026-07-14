@@ -89,6 +89,8 @@ def generate_episode_script(
     current_user: User = Depends(get_current_user),
 ) -> ScriptOut:
     episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    if episode.status != "draft":
+        raise HTTPException(status_code=409, detail="ERR_EPISODE_NOT_DRAFT")
     style = episode.series.style if episode.series else {}
     try:
         script = generate_script(
@@ -177,6 +179,8 @@ def generate_scene_asset(
     current_user: User = Depends(get_current_user),
 ) -> Scene:
     episode = _get_owned_episode_or_404(episode_id, db, current_user)
+    if episode.status != "draft":
+        raise HTTPException(status_code=409, detail="ERR_EPISODE_NOT_DRAFT")
     scene = next((s for s in episode.scenes if s.id == scene_id), None)
     if scene is None:
         raise HTTPException(status_code=404, detail="Scene not found")

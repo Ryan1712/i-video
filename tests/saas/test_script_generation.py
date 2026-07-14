@@ -94,6 +94,25 @@ def test_endpoint_maps_aierror_to_502(client, monkeypatch):
     assert resp.json()["detail"] == "ERR_SCRIPT_GENERATION_FAILED"
 
 
+def test_endpoint_conflicts_when_not_draft(client, monkeypatch):
+    monkeypatch.setattr(episodes_router, "generate_script", lambda **kwargs: "x")
+    headers = _auth(client)
+    ep_id = client.post("/episodes", json={"title": "EP1", "scenes": []}, headers=headers).json()["id"]
+
+    from saas.models import Episode
+    db = client.app.dependency_overrides[get_db]().__next__()
+    db.query(Episode).filter_by(id=ep_id).update({"status": "built"})
+    db.commit()
+
+    resp = client.post(
+        f"/episodes/{ep_id}/generate-script",
+        json={"brief": "b", "target_duration_sec": 60},
+        headers=headers,
+    )
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "ERR_EPISODE_NOT_DRAFT"
+
+
 def test_endpoint_is_owner_scoped(client, monkeypatch):
     monkeypatch.setattr(episodes_router, "generate_script", lambda **kwargs: "x")
     headers_a = _auth(client, "a@example.com")
