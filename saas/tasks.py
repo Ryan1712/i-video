@@ -66,13 +66,14 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             tts = get_tts_provider(style.get("tts_provider"))
             voice = style.get("voice_id", "")
             language = style.get("language", "en")
+            voice_style = style.get("voice_style", 0.0)
             total = len(engine_episode.scenes)
             for index, scene in enumerate(engine_episode.scenes):
                 job.stage = f"tts {index + 1}/{total}"
                 job.progress_pct = int((index + 1) / total * 50)
                 db.commit()
                 audio_path = os.path.join(temp_dir, "audio", f"{scene.name}.mp3")
-                tts.synthesize(scene.text, audio_path, voice=voice, language=language)
+                tts.synthesize(scene.text, audio_path, voice=voice, language=language, style=voice_style)
                 duration = get_audio_duration(audio_path)
                 audio_paths.append(audio_path)
                 durations.append(duration)

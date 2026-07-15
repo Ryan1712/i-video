@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from moto import mock_aws
 
-from saas.models import Episode, Job, Scene, User
+from saas.models import Episode, Job, Scene, Series, User
 from saas.tasks import run_build
 
 
@@ -88,3 +88,47 @@ def test_run_build_marks_job_failed_on_exception(db_session, db_session_factory,
     assert "ElevenLabs exploded" in job.error_message
     assert episode.status == "draft"
     fresh.close()
+
+
+@mock_aws
+def test_run_build_passes_voice_style_from_series_style(db_session, db_session_factory, tmp_path, monkeypatch):
+    _set_s3_env(monkeypatch)
+    from saas.object_storage import ensure_bucket, upload_bytes
+
+    ensure_bucket()
+
+    user = User(email="e2@example.com", password_hash="h", role="user")
+    db_session.add(user)
+    db_session.commit()
+
+    series = Series(user_id=user.id, name="S", style={"voice_style": 0.6})
+    db_session.add(series)
+    db_session.commit()
+
+    episode = Episode(
+        user_id=user.id, series_id=series.id, title="T", description="", tags="", status="ready"
+    )
+    scene = Scene(order_index=0, narration_text="Hello world", asset_object_key=None)
+    episode.scenes.append(scene)
+    db_session.add(episode)
+    db_session.commit()
+
+    key = f"episodes/{episode.id}/scenes/{scene.id}.png"
+    upload_bytes(key, b"fake-png-bytes")
+    scene.asset_object_key = key
+    db_session.commit()
+
+    job = Job(episode_id=episode.id, type="build", status="queued")
+    db_session.add(job)
+    db_session.commit()
+
+    fake_output_path = tmp_path / "fake_engine_output.mp4"
+    fake_output_path.write_bytes(b"fake-mp4-bytes")
+
+    with patch("saas.tts_providers.synthesize_scene") as synth_mock, \
+         patch("saas.tasks.get_audio_duration", return_value=2.5), \
+         patch("saas.tasks.build_scene_clip"), \
+         patch("saas.tasks.build_episode", return_value=str(fake_output_path)):
+        run_build(job.id, db_session_factory)
+
+    assert synth_mock.call_args[1]["style"] == 0.6

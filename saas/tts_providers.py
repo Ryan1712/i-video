@@ -12,17 +12,20 @@ AZURE_TTS_URL = "https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
 
 
 class ElevenLabsTTS:
-    def synthesize(self, text: str, out_path: str, voice: str, language: str) -> None:
+    def synthesize(self, text: str, out_path: str, voice: str, language: str, style: float = 0.0) -> None:
         synthesize_scene(
             text,
             out_path,
             os.environ.get("ELEVENLABS_API_KEY", ""),
             voice or os.environ.get("ELEVENLABS_VOICE_ID", ""),
+            style=style,
         )
 
 
 class AzureTTS:
-    def synthesize(self, text: str, out_path: str, voice: str, language: str) -> None:
+    def synthesize(self, text: str, out_path: str, voice: str, language: str, style: float = 0.0) -> None:
+        # style is an ElevenLabs-only expressiveness knob; Azure has no equivalent, so it's accepted and ignored
+        # to keep the interface uniform for saas/tasks.py.
         key = os.environ.get("AZURE_SPEECH_KEY", "")
         region = os.environ.get("AZURE_SPEECH_REGION", "")
         if not key or not region:

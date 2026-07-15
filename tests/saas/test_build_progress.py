@@ -67,7 +67,7 @@ def test_run_build_updates_stage_and_progress(db_session_factory, tmp_path, monk
             f.write(b"x")
 
     class FakeTTS:
-        def synthesize(self, text, out_path, voice, language):
+        def synthesize(self, text, out_path, voice, language, style=0.0):
             with open(out_path, "wb") as f:
                 f.write(b"mp3")
 
