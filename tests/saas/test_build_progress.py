@@ -71,6 +71,9 @@ def test_run_build_updates_stage_and_progress(db_session_factory, tmp_path, monk
             with open(out_path, "wb") as f:
                 f.write(b"mp3")
 
+        def cache_key_fields(self, text, voice, language, style=0.0):
+            return {"provider": "fake", "voice": voice, "language": language, "style": style, "text": text}
+
     def snapshot(*args, **kwargs):
         check = db_session_factory()
         j = check.query(Job).filter_by(id=job_id).one()

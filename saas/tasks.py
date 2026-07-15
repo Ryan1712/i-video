@@ -15,12 +15,14 @@ from agent_video.image_builder import build_scene_clip
 from agent_video.script_parser import Episode as EngineEpisode
 from agent_video.script_parser import Scene as EngineScene
 from agent_video.tts import get_audio_duration
+from agent_video.tts_cache import synthesize_with_cache, tts_cache_enabled
 from agent_video.video_builder import build_episode
 
 from .celery_app import celery_app
 from .db import init_session_factory
 from .models import Episode, Job, YouTubeConnection
 from .storage import download_to_path, save_output
+from .tts_cache_store import ObjectStorageCacheStore
 from .tts_providers import get_tts_provider
 from .youtube_auth import decrypt_token
 
@@ -71,12 +73,24 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             if music_key:
                 download_to_path(music_key, os.path.join(temp_dir, "music.mp3"))
             total = len(engine_episode.scenes)
+            cache_store = ObjectStorageCacheStore()
+            cache_hits = 0
             for index, scene in enumerate(engine_episode.scenes):
-                job.stage = f"tts {index + 1}/{total}"
+                cache_note = f" ({cache_hits} cached)" if cache_hits else ""
+                job.stage = f"tts {index + 1}/{total}{cache_note}"
                 job.progress_pct = int((index + 1) / total * 50)
                 db.commit()
                 audio_path = os.path.join(temp_dir, "audio", f"{scene.name}.mp3")
-                tts.synthesize(scene.text, audio_path, voice=voice, language=language, style=voice_style)
+                if tts_cache_enabled():
+                    hit = synthesize_with_cache(
+                        tts.cache_key_fields(scene.text, voice=voice, language=language, style=voice_style),
+                        lambda p, t=scene.text: tts.synthesize(t, p, voice=voice, language=language, style=voice_style),
+                        audio_path,
+                        cache_store,
+                    )
+                    cache_hits += 1 if hit else 0
+                else:
+                    tts.synthesize(scene.text, audio_path, voice=voice, language=language, style=voice_style)
                 duration = get_audio_duration(audio_path)
                 audio_paths.append(audio_path)
                 durations.append(duration)
