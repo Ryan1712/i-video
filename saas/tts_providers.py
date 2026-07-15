@@ -6,9 +6,16 @@ from xml.sax.saxutils import escape
 
 import requests
 
-from agent_video.tts import TTSError, synthesize_scene
+from agent_video.tts import (
+    ELEVENLABS_MODEL_ID,
+    ELEVENLABS_SIMILARITY,
+    ELEVENLABS_STABILITY,
+    TTSError,
+    synthesize_scene,
+)
 
 AZURE_TTS_URL = "https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
+AZURE_OUTPUT_FORMAT = "audio-24khz-96kbitrate-mono-mp3"
 
 
 class ElevenLabsTTS:
@@ -20,6 +27,17 @@ class ElevenLabsTTS:
             voice or os.environ.get("ELEVENLABS_VOICE_ID", ""),
             style=style,
         )
+
+    def cache_key_fields(self, text: str, voice: str, language: str, style: float = 0.0) -> dict:
+        return {
+            "provider": "elevenlabs",
+            "model_id": ELEVENLABS_MODEL_ID,
+            "voice": voice or os.environ.get("ELEVENLABS_VOICE_ID", ""),
+            "stability": ELEVENLABS_STABILITY,
+            "similarity_boost": ELEVENLABS_SIMILARITY,
+            "style": style,
+            "text": text,
+        }
 
 
 class AzureTTS:
@@ -41,7 +59,7 @@ class AzureTTS:
             headers={
                 "Ocp-Apim-Subscription-Key": key,
                 "Content-Type": "application/ssml+xml",
-                "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+                "X-Microsoft-OutputFormat": AZURE_OUTPUT_FORMAT,
             },
             data=ssml.encode("utf-8"),
             timeout=120,
@@ -51,6 +69,15 @@ class AzureTTS:
         os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
         with open(out_path, "wb") as f:
             f.write(response.content)
+
+    def cache_key_fields(self, text: str, voice: str, language: str, style: float = 0.0) -> dict:
+        return {
+            "provider": "azure",
+            "voice": voice,
+            "language": language,
+            "output_format": AZURE_OUTPUT_FORMAT,
+            "text": text,
+        }
 
 
 def get_tts_provider(name: str | None = None):
