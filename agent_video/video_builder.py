@@ -63,7 +63,14 @@ def build_episode(
 
     font = config["caption"]["font"]
     font_size = config["caption"]["font_size"]
-    force_style = f"force_style='FontName={font},FontSize={font_size}'"
+    # BorderStyle=3 draws an opaque box behind the text (BackColour) instead of
+    # just an outline — shrinks the caption's visual weight and hides whatever
+    # is underneath, including baked-in text in UI-mockup scene images.
+    # BackColour is ASS &HAABBGGRR: AA=80 is ~50% transparent black.
+    force_style = (
+        f"force_style='FontName={font},FontSize={font_size},"
+        f"BorderStyle=3,Outline=1,Shadow=0,BackColour=&H80000000,MarginV=40'"
+    )
 
     music_path = os.path.join(video_dir, "music.mp3")
     has_music = os.path.isfile(music_path)
