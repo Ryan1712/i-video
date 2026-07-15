@@ -94,3 +94,23 @@ def test_get_audio_duration_parses_ffprobe_json():
                 duration = get_audio_duration("scene_01.mp3")
 
     assert duration == 4.25
+
+
+def test_synthesize_scene_includes_style_in_voice_settings(tmp_path):
+    out_path = str(tmp_path / "scene_01.mp3")
+    fake_resp = MagicMock(status_code=200, content=b"fake-mp3-bytes")
+
+    with patch("agent_video.tts.requests.post", return_value=fake_resp) as post_mock:
+        synthesize_scene("hello", out_path, api_key="key123", voice_id="voiceABC", style=0.6)
+
+    assert post_mock.call_args[1]["json"]["voice_settings"]["style"] == 0.6
+
+
+def test_synthesize_scene_style_defaults_to_zero(tmp_path):
+    out_path = str(tmp_path / "scene_01.mp3")
+    fake_resp = MagicMock(status_code=200, content=b"fake-mp3-bytes")
+
+    with patch("agent_video.tts.requests.post", return_value=fake_resp) as post_mock:
+        synthesize_scene("hello", out_path, api_key="key123", voice_id="voiceABC")
+
+    assert post_mock.call_args[1]["json"]["voice_settings"]["style"] == 0.0

@@ -19,7 +19,7 @@ class TTSError(RuntimeError):
     pass
 
 
-def synthesize_scene(text: str, out_path: str, api_key: str, voice_id: str) -> None:
+def synthesize_scene(text: str, out_path: str, api_key: str, voice_id: str, style: float = 0.0) -> None:
     if not api_key or not voice_id:
         raise TTSError(
             "ELEVENLABS_API_KEY / ELEVENLABS_VOICE_ID not set. See SETUP.md."
@@ -40,7 +40,7 @@ def synthesize_scene(text: str, out_path: str, api_key: str, voice_id: str) -> N
                 json={
                     "text": text,
                     "model_id": "eleven_multilingual_v2",
-                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75, "style": style},
                 },
                 timeout=120,
             )
