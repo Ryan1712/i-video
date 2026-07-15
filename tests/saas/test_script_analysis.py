@@ -91,7 +91,7 @@ def test_endpoint_replaces_scenes_and_copies_matched_object_key(client, monkeypa
     asset = client.post(
         f"/series/{sid}/assets",
         files={"file": ("hero.png", b"png-bytes", "image/png")},
-        data={"kind": "character", "name": "hero", "description": "stick figure"},
+        data={"kind": "location", "name": "hero", "description": "stick figure"},
         headers=headers,
     ).json()
 
@@ -114,6 +114,45 @@ def test_endpoint_replaces_scenes_and_copies_matched_object_key(client, monkeypa
     assert body["scenes"][0]["asset_object_key"] == "series/1/assets/1.png"
     assert body["scenes"][1]["asset_object_key"] is None
     assert body["scenes"][1]["asset_brief"] == "A dark forest"
+
+
+def test_endpoint_only_sends_location_and_generated_assets_to_ai(client, monkeypatch):
+    headers = _auth(client)
+    sid = client.post("/series", json={"name": "S"}, headers=headers).json()["id"]
+    ep_id = client.post(
+        "/episodes", json={"title": "EP1", "series_id": sid, "scenes": []}, headers=headers
+    ).json()["id"]
+
+    monkeypatch.setattr(
+        "saas.routers.series.save_series_asset", lambda *a, **k: "series/1/assets/1.png"
+    )
+
+    def _upload(kind, name):
+        return client.post(
+            f"/series/{sid}/assets",
+            files={"file": ("a.png", b"png-bytes", "image/png")},
+            data={"kind": kind, "name": name, "description": name},
+            headers=headers,
+        ).json()
+
+    location_asset = _upload("location", "bedroom")
+    character_asset = _upload("character", "hero")
+    object_asset = _upload("object", "flashlight")
+
+    captured = {}
+
+    def fake_analyze(script, language, asset_catalog):
+        captured["catalog"] = asset_catalog
+        return [{"narration_text": "One.", "asset_id": None, "asset_brief": "A scene"}]
+
+    monkeypatch.setattr(episodes_router, "analyze_script", fake_analyze)
+
+    client.post(f"/episodes/{ep_id}/analyze-script", json={"script": "s"}, headers=headers)
+
+    sent_ids = {a["id"] for a in captured["catalog"]}
+    assert location_asset["id"] in sent_ids
+    assert character_asset["id"] not in sent_ids
+    assert object_asset["id"] not in sent_ids
 
 
 def test_endpoint_conflicts_when_not_draft(client, monkeypatch):

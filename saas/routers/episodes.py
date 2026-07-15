@@ -124,9 +124,14 @@ def analyze_episode_script(
     series = episode.series
     style = series.style if series else {}
     assets = series.assets if series else []
+    # Only full-scene backgrounds are valid matches — character/object/UI-mockup
+    # assets were authored as small overlay pieces, not standalone 16:9 scenes,
+    # and forcing them full-frame produces unreadable crops (see
+    # docs/superpowers/specs/2026-07-14-episode-render-quality-fix-design.md).
+    background_assets = [a for a in assets if a.kind == "location" or a.source == "generated"]
     catalog = [
         {"id": a.id, "kind": a.kind, "name": a.name, "description": a.description}
-        for a in assets
+        for a in background_assets
     ]
     try:
         analyzed = analyze_script(payload.script, style.get("language", "en"), catalog)
