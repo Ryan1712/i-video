@@ -36,6 +36,13 @@ def save_series_asset(series_id: int, asset_id: int, filename: str, content: byt
     return key
 
 
+def save_series_music(series_id: int, filename: str, content: bytes) -> str:
+    _, ext = os.path.splitext(filename)
+    key = f"series/{series_id}/music{ext}"
+    upload_bytes(key, content)
+    return key
+
+
 def save_output(episode_id: int, local_mp4_path: str) -> str:
     key = f"episodes/{episode_id}/output.mp4"
     with open(local_mp4_path, "rb") as f:

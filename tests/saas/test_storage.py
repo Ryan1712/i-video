@@ -53,6 +53,20 @@ def test_save_output_uploads_local_file_and_returns_key(tmp_path, monkeypatch):
 
 
 @mock_aws
+def test_save_series_music_uploads_and_returns_key(monkeypatch):
+    _set_s3_env(monkeypatch)
+    from saas.object_storage import ensure_bucket, get_s3_client
+    from saas.storage import save_series_music
+
+    ensure_bucket()
+    key = save_series_music(series_id=2, filename="track.mp3", content=b"fake-mp3-bytes")
+
+    assert key == "series/2/music.mp3"
+    body = get_s3_client().get_object(Bucket="whatif-test-bucket", Key=key)["Body"].read()
+    assert body == b"fake-mp3-bytes"
+
+
+@mock_aws
 def test_presigned_asset_url_and_presigned_output_url(monkeypatch):
     _set_s3_env(monkeypatch)
     from saas.object_storage import ensure_bucket, upload_bytes

@@ -67,6 +67,9 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             voice = style.get("voice_id", "")
             language = style.get("language", "en")
             voice_style = style.get("voice_style", 0.0)
+            music_key = style.get("music_object_key")
+            if music_key:
+                download_to_path(music_key, os.path.join(temp_dir, "music.mp3"))
             total = len(engine_episode.scenes)
             for index, scene in enumerate(engine_episode.scenes):
                 job.stage = f"tts {index + 1}/{total}"
