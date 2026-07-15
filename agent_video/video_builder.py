@@ -66,7 +66,9 @@ def build_episode(
     # BorderStyle=3 draws an opaque box behind the text (BackColour) instead of
     # just an outline — shrinks the caption's visual weight and hides whatever
     # is underneath, including baked-in text in UI-mockup scene images.
-    # BackColour is ASS &HAABBGGRR: AA=80 is ~50% transparent black.
+    # BackColour is ASS &HAABBGGRR; empirically, AA (alpha) had no visible
+    # effect on this box across &H00/&H40/&H80/&HC0 — it renders fully
+    # opaque black regardless in this ffmpeg/libass build.
     force_style = (
         f"force_style='FontName={font},FontSize={font_size},"
         f"BorderStyle=3,Outline=1,Shadow=0,BackColour=&H80000000,MarginV=40'"
