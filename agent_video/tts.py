@@ -4,11 +4,15 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import time
 
 import requests
 from imageio_ffmpeg import get_ffmpeg_exe
 
 ELEVENLABS_TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+
+TTS_MAX_ATTEMPTS = 3
+TTS_RETRY_DELAY_SECONDS = 1
 
 
 class TTSError(RuntimeError):
@@ -22,20 +26,32 @@ def synthesize_scene(text: str, out_path: str, api_key: str, voice_id: str) -> N
         )
 
     url = ELEVENLABS_TTS_URL.format(voice_id=voice_id)
-    resp = requests.post(
-        url,
-        headers={
-            "xi-api-key": api_key,
-            "Content-Type": "application/json",
-            "Accept": "audio/mpeg",
-        },
-        json={
-            "text": text,
-            "model_id": "eleven_multilingual_v2",
-            "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
-        },
-        timeout=120,
-    )
+
+    resp = None
+    for attempt in range(1, TTS_MAX_ATTEMPTS + 1):
+        try:
+            resp = requests.post(
+                url,
+                headers={
+                    "xi-api-key": api_key,
+                    "Content-Type": "application/json",
+                    "Accept": "audio/mpeg",
+                },
+                json={
+                    "text": text,
+                    "model_id": "eleven_multilingual_v2",
+                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+                },
+                timeout=120,
+            )
+            break
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+            if attempt == TTS_MAX_ATTEMPTS:
+                raise TTSError(
+                    f"ElevenLabs TTS request failed after {TTS_MAX_ATTEMPTS} attempts: {exc}"
+                ) from exc
+            time.sleep(TTS_RETRY_DELAY_SECONDS)
+
     if resp.status_code != 200:
         raise TTSError(f"ElevenLabs TTS failed ({resp.status_code}): {resp.text[:500]}")
 
