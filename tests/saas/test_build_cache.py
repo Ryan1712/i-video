@@ -19,7 +19,7 @@ def _fake_synth(text, out_path, api_key, voice_id, style=0.0):
         f.write(b"audio:" + text.encode("utf-8"))
 
 
-def _make_episode(db_session, monkeypatch):
+def _make_episode(db_session, monkeypatch, narrations=("Hello world",)):
     _set_s3_env(monkeypatch)
     from saas.object_storage import ensure_bucket, upload_bytes
 
@@ -30,16 +30,21 @@ def _make_episode(db_session, monkeypatch):
     db_session.commit()
 
     episode = Episode(user_id=user.id, title="Cache Test", description="", tags="", status="ready")
-    scene = Scene(order_index=0, narration_text="Hello world", asset_object_key=None)
-    episode.scenes.append(scene)
+    scenes = [
+        Scene(order_index=i, narration_text=text, asset_object_key=None)
+        for i, text in enumerate(narrations)
+    ]
+    for scene in scenes:
+        episode.scenes.append(scene)
     db_session.add(episode)
     db_session.commit()
 
-    key = f"episodes/{episode.id}/scenes/{scene.id}.png"
-    upload_bytes(key, b"fake-png-bytes")
-    scene.asset_object_key = key
+    for scene in scenes:
+        key = f"episodes/{episode.id}/scenes/{scene.id}.png"
+        upload_bytes(key, b"fake-png-bytes")
+        scene.asset_object_key = key
     db_session.commit()
-    return episode, scene
+    return episode, scenes
 
 
 def _new_build_job(db_session, episode_id):
@@ -81,11 +86,11 @@ def test_second_build_makes_zero_tts_calls(db_session, db_session_factory, tmp_p
 
 @mock_aws
 def test_changed_narration_synthesizes_only_changed_scene(db_session, db_session_factory, tmp_path, monkeypatch):
-    episode, scene = _make_episode(db_session, monkeypatch)
+    episode, scenes = _make_episode(db_session, monkeypatch, narrations=("Hello world", "Second scene line"))
 
-    assert _run(_new_build_job(db_session, episode.id), db_session_factory, tmp_path).call_count == 1
+    assert _run(_new_build_job(db_session, episode.id), db_session_factory, tmp_path).call_count == 2
 
-    scene.narration_text = "Hello again"
+    scenes[0].narration_text = "Hello again"
     episode.status = "ready"
     db_session.commit()
 

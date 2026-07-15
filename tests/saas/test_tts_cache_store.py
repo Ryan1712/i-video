@@ -1,8 +1,6 @@
 """Tests for the S3-backed TTS cache store and provider cache-key fields."""
 import os
-from unittest.mock import patch
 
-import pytest
 from moto import mock_aws
 
 from saas.tts_providers import AZURE_OUTPUT_FORMAT, AzureTTS, ElevenLabsTTS

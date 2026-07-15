@@ -102,6 +102,10 @@ def test_local_store_roundtrip(tmp_path):
     assert store.fetch("abc123", str(dest)) is True
     assert dest.read_bytes() == b"audio-bytes"
 
+    cache_files = os.listdir(tmp_path / "cache")
+    assert len(cache_files) == 1
+    assert not cache_files[0].endswith(".tmp")
+
 
 def test_local_store_fetch_miss_returns_false(tmp_path):
     store = LocalCacheStore(str(tmp_path / "cache"))

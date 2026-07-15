@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import shutil
+import tempfile
 from typing import Callable
 
 # Bump whenever TTS behavior changes in a way that makes previously cached audio stale
@@ -48,7 +49,17 @@ class LocalCacheStore:
 
     def store(self, key: str, src_path: str) -> None:
         os.makedirs(self.root_dir, exist_ok=True)
-        shutil.copyfile(src_path, self._entry_path(key))
+        fd, tmp_path = tempfile.mkstemp(dir=self.root_dir, suffix=".tmp")
+        os.close(fd)
+        try:
+            shutil.copyfile(src_path, tmp_path)
+            os.replace(tmp_path, self._entry_path(key))
+        except BaseException:
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+            raise
 
 
 def synthesize_with_cache(
