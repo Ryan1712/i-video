@@ -10,6 +10,9 @@ import requests
 from imageio_ffmpeg import get_ffmpeg_exe
 
 ELEVENLABS_TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+ELEVENLABS_MODEL_ID = "eleven_multilingual_v2"
+ELEVENLABS_STABILITY = 0.5
+ELEVENLABS_SIMILARITY = 0.75
 
 TTS_MAX_ATTEMPTS = 3
 TTS_RETRY_DELAY_SECONDS = 1
@@ -39,8 +42,12 @@ def synthesize_scene(text: str, out_path: str, api_key: str, voice_id: str, styl
                 },
                 json={
                     "text": text,
-                    "model_id": "eleven_multilingual_v2",
-                    "voice_settings": {"stability": 0.5, "similarity_boost": 0.75, "style": style},
+                    "model_id": ELEVENLABS_MODEL_ID,
+                    "voice_settings": {
+                        "stability": ELEVENLABS_STABILITY,
+                        "similarity_boost": ELEVENLABS_SIMILARITY,
+                        "style": style,
+                    },
                 },
                 timeout=120,
             )

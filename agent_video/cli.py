@@ -12,7 +12,8 @@ from .config import load_config
 from .image_builder import build_scene_clip
 from .manifest import build_manifest, print_manifest_report, write_manifest
 from .script_parser import ScriptParseError, parse_script
-from .tts import get_audio_duration, synthesize_scene
+from .tts import ELEVENLABS_MODEL_ID, ELEVENLABS_SIMILARITY, ELEVENLABS_STABILITY, get_audio_duration, synthesize_scene
+from .tts_cache import LocalCacheStore, synthesize_with_cache, tts_cache_enabled
 from .video_builder import build_episode
 from .youtube_uploader import upload_video
 
@@ -77,13 +78,34 @@ def cmd_build(video_dir: str, assets_common_dir: str = "assets_common", project_
 
     audio_paths = []
     durations = []
+    cache_store = LocalCacheStore(os.path.join(os.path.dirname(os.path.abspath(video_dir)), ".tts_cache"))
+    cache_hits = 0
     for scene in episode.scenes:
         audio_path = os.path.join(video_dir, "audio", f"{scene.name}.mp3")
-        synthesize_scene(scene.text, audio_path, api_key, voice_id)
+        if tts_cache_enabled():
+            key_fields = {
+                "provider": "elevenlabs",
+                "model_id": ELEVENLABS_MODEL_ID,
+                "voice": voice_id,
+                "stability": ELEVENLABS_STABILITY,
+                "similarity_boost": ELEVENLABS_SIMILARITY,
+                "style": 0.0,
+                "text": scene.text,
+            }
+            hit = synthesize_with_cache(
+                key_fields,
+                lambda p, t=scene.text: synthesize_scene(t, p, api_key, voice_id),
+                audio_path,
+                cache_store,
+            )
+            cache_hits += 1 if hit else 0
+        else:
+            synthesize_scene(scene.text, audio_path, api_key, voice_id)
         duration = get_audio_duration(audio_path)
         audio_paths.append(audio_path)
         durations.append(duration)
-    print(f"Bước 2/4: Tạo giọng đọc...                 ✓ {len(episode.scenes)} scene")
+    cache_note = f" ({cache_hits} từ cache)" if cache_hits else ""
+    print(f"Bước 2/4: Tạo giọng đọc...                 ✓ {len(episode.scenes)} scene{cache_note}")
 
     clip_paths = []
     tmp_dir = os.path.join(video_dir, "output", "_tmp")

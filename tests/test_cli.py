@@ -160,3 +160,90 @@ def test_main_status_handles_script_parse_error(tmp_path, capsys):
     assert result == 1
     captured = capsys.readouterr()
     assert "Lỗi" in captured.out
+
+
+def _fake_synth(text, out_path, api_key, voice_id, style=0.0):
+    with open(out_path, "wb") as f:
+        f.write(b"audio:" + text.encode("utf-8"))
+
+
+def _build_ready_episode_dir(tmp_path):
+    ep_dir = str(tmp_path / "ep")
+    os.makedirs(os.path.join(ep_dir, "assets"))
+    os.makedirs(os.path.join(ep_dir, "audio"))
+    os.makedirs(os.path.join(ep_dir, "output"))
+    with open(os.path.join(ep_dir, "script.md"), "w", encoding="utf-8") as f:
+        f.write("title: Test\n\n## scene_01\nasset: hero.png\ntext: hi\n")
+    open(os.path.join(ep_dir, "assets", "hero.png"), "wb").close()
+    common_dir = str(tmp_path / "assets_common")
+    os.makedirs(common_dir)
+    return ep_dir, common_dir
+
+
+def test_cmd_build_second_run_uses_tts_cache(tmp_path):
+    ep_dir, common_dir = _build_ready_episode_dir(tmp_path)
+
+    common_patches = dict(
+        get_audio_duration=3.0,
+        output=os.path.join(ep_dir, "output", "episode.mp4"),
+    )
+    env = {"ELEVENLABS_API_KEY": "k", "ELEVENLABS_VOICE_ID": "v"}
+
+    with patch.dict(os.environ, env):
+        with patch("agent_video.cli.synthesize_scene", side_effect=_fake_synth) as synth1, \
+             patch("agent_video.cli.get_audio_duration", return_value=common_patches["get_audio_duration"]), \
+             patch("agent_video.cli.build_scene_clip"), \
+             patch("agent_video.cli.build_episode", return_value=common_patches["output"]):
+            cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
+        assert synth1.call_count == 1
+
+        with patch("agent_video.cli.synthesize_scene", side_effect=_fake_synth) as synth2, \
+             patch("agent_video.cli.get_audio_duration", return_value=common_patches["get_audio_duration"]), \
+             patch("agent_video.cli.build_scene_clip"), \
+             patch("agent_video.cli.build_episode", return_value=common_patches["output"]):
+            cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
+        assert synth2.call_count == 0
+
+    # cache lives next to the episode dir
+    cache_dir = os.path.join(str(tmp_path), ".tts_cache")
+    assert os.path.isdir(cache_dir)
+    assert len(os.listdir(cache_dir)) == 1
+
+
+def test_cmd_build_tts_cache_off_env_disables_cache(tmp_path):
+    ep_dir, common_dir = _build_ready_episode_dir(tmp_path)
+    env = {"ELEVENLABS_API_KEY": "k", "ELEVENLABS_VOICE_ID": "v", "TTS_CACHE": "off"}
+
+    with patch.dict(os.environ, env):
+        for _ in range(2):
+            with patch("agent_video.cli.synthesize_scene", side_effect=_fake_synth) as synth, \
+                 patch("agent_video.cli.get_audio_duration", return_value=3.0), \
+                 patch("agent_video.cli.build_scene_clip"), \
+                 patch("agent_video.cli.build_episode", return_value=os.path.join(ep_dir, "output", "episode.mp4")):
+                cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
+            assert synth.call_count == 1
+
+    assert not os.path.isdir(os.path.join(str(tmp_path), ".tts_cache"))
+
+
+def test_cmd_build_changed_text_synthesizes_again(tmp_path):
+    ep_dir, common_dir = _build_ready_episode_dir(tmp_path)
+    env = {"ELEVENLABS_API_KEY": "k", "ELEVENLABS_VOICE_ID": "v"}
+
+    with patch.dict(os.environ, env):
+        with patch("agent_video.cli.synthesize_scene", side_effect=_fake_synth) as synth1, \
+             patch("agent_video.cli.get_audio_duration", return_value=3.0), \
+             patch("agent_video.cli.build_scene_clip"), \
+             patch("agent_video.cli.build_episode", return_value=os.path.join(ep_dir, "output", "episode.mp4")):
+            cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
+        assert synth1.call_count == 1
+
+        with open(os.path.join(ep_dir, "script.md"), "w", encoding="utf-8") as f:
+            f.write("title: Test\n\n## scene_01\nasset: hero.png\ntext: hello again\n")
+
+        with patch("agent_video.cli.synthesize_scene", side_effect=_fake_synth) as synth2, \
+             patch("agent_video.cli.get_audio_duration", return_value=3.0), \
+             patch("agent_video.cli.build_scene_clip"), \
+             patch("agent_video.cli.build_episode", return_value=os.path.join(ep_dir, "output", "episode.mp4")):
+            cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
+        assert synth2.call_count == 1
