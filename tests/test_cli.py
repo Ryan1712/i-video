@@ -247,3 +247,72 @@ def test_cmd_build_changed_text_synthesizes_again(tmp_path):
              patch("agent_video.cli.build_episode", return_value=os.path.join(ep_dir, "output", "episode.mp4")):
             cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
         assert synth2.call_count == 1
+
+
+SECTIONED_BUILD_SCRIPT = """title: Test
+description: d
+tags: t
+
+## SECTION: Opening
+mood: suspense
+intensity: 0.4
+music: suspense-low
+
+## scene_01
+asset: hero.png
+text: hi
+
+## SECTION: Ending
+mood: calm
+
+## scene_02
+asset: hero.png
+text: bye
+"""
+
+
+def test_cmd_build_writes_production_plan(tmp_path):
+    ep_dir = str(tmp_path / "ep")
+    os.makedirs(os.path.join(ep_dir, "assets"))
+    os.makedirs(os.path.join(ep_dir, "audio"))
+    os.makedirs(os.path.join(ep_dir, "output"))
+    with open(os.path.join(ep_dir, "script.md"), "w", encoding="utf-8") as f:
+        f.write(SECTIONED_BUILD_SCRIPT)
+    open(os.path.join(ep_dir, "assets", "hero.png"), "wb").close()
+    common_dir = str(tmp_path / "assets_common")
+    os.makedirs(common_dir)
+
+    with patch.dict(os.environ, {"ELEVENLABS_API_KEY": "k", "ELEVENLABS_VOICE_ID": "v"}):
+        with patch("agent_video.cli.synthesize_scene", side_effect=_fake_synth), \
+             patch("agent_video.cli.get_audio_duration", return_value=3.0), \
+             patch("agent_video.cli.build_scene_clip"), \
+             patch("agent_video.cli.build_episode", return_value=os.path.join(ep_dir, "output", "episode.mp4")):
+            result = cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
+
+    assert result is not None
+    from agent_video.production_plan import load_plan
+
+    plan = load_plan(os.path.join(ep_dir, "production_plan.json"))
+    assert plan.title == "Test"
+    assert [s.id for s in plan.sections] == ["opening", "ending"]
+    assert plan.sections[0].mood == "suspense"
+    assert plan.sections[0].intensity == 0.4
+    assert plan.sections[0].music_profile == "suspense-low"
+    assert [s.name for s in plan.flatten_scenes()] == ["scene_01", "scene_02"]
+
+
+def test_cmd_build_plan_written_for_sectionless_script(tmp_path):
+    ep_dir, common_dir = _build_ready_episode_dir(tmp_path)
+
+    with patch.dict(os.environ, {"ELEVENLABS_API_KEY": "k", "ELEVENLABS_VOICE_ID": "v"}):
+        with patch("agent_video.cli.synthesize_scene", side_effect=_fake_synth), \
+             patch("agent_video.cli.get_audio_duration", return_value=3.0), \
+             patch("agent_video.cli.build_scene_clip"), \
+             patch("agent_video.cli.build_episode", return_value=os.path.join(ep_dir, "output", "episode.mp4")):
+            cmd_build(ep_dir, assets_common_dir=common_dir, project_root=str(tmp_path))
+
+    from agent_video.production_plan import load_plan
+
+    plan = load_plan(os.path.join(ep_dir, "production_plan.json"))
+    assert len(plan.sections) == 1
+    assert [s.name for s in plan.flatten_scenes()] == ["scene_01"]

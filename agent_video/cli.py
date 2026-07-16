@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from .config import load_config
 from .image_builder import build_scene_clip
 from .manifest import build_manifest, print_manifest_report, write_manifest
+from .production_plan import plan_from_episode, write_plan
 from .script_parser import ScriptParseError, parse_script, slugify
 from .tts import ELEVENLABS_MODEL_ID, ELEVENLABS_SIMILARITY, ELEVENLABS_STABILITY, get_audio_duration, synthesize_scene
 from .tts_cache import LocalCacheStore, synthesize_with_cache, tts_cache_enabled
@@ -64,6 +65,11 @@ def cmd_build(video_dir: str, assets_common_dir: str = "assets_common", project_
 
     print(f"Bước 1/4: Kiểm tra ảnh...                  ✓ Đủ {len(episode.scenes)}/{len(episode.scenes)} ảnh")
 
+    plan = plan_from_episode(episode)
+    plan.validate()
+    write_plan(plan, os.path.join(video_dir, "production_plan.json"))
+    plan_scenes = plan.flatten_scenes()
+
     config = load_config(video_dir, project_root=project_root)
     api_key = os.environ.get("ELEVENLABS_API_KEY", "")
     voice_id = os.environ.get("ELEVENLABS_VOICE_ID", "")
@@ -72,7 +78,7 @@ def cmd_build(video_dir: str, assets_common_dir: str = "assets_common", project_
     durations = []
     cache_store = LocalCacheStore(os.path.join(os.path.dirname(os.path.abspath(video_dir)), ".tts_cache"))
     cache_hits = 0
-    for scene in episode.scenes:
+    for scene in plan_scenes:
         audio_path = os.path.join(video_dir, "audio", f"{scene.name}.mp3")
         if tts_cache_enabled():
             key_fields = {
@@ -97,12 +103,12 @@ def cmd_build(video_dir: str, assets_common_dir: str = "assets_common", project_
         audio_paths.append(audio_path)
         durations.append(duration)
     cache_note = f" ({cache_hits} từ cache)" if cache_hits else ""
-    print(f"Bước 2/4: Tạo giọng đọc...                 ✓ {len(episode.scenes)} scene{cache_note}")
+    print(f"Bước 2/4: Tạo giọng đọc...                 ✓ {len(plan_scenes)} scene{cache_note}")
 
     clip_paths = []
     tmp_dir = os.path.join(video_dir, "output", "_tmp")
     asset_lookup = {item["asset"]: item["found_at"] for item in manifest["assets"]}
-    for scene, duration in zip(episode.scenes, durations):
+    for scene, duration in zip(plan_scenes, durations):
         clip_path = os.path.join(video_dir, "output", f"_clip_{scene.name}.mp4")
         build_scene_clip(asset_lookup[scene.asset], duration, clip_path, tmp_dir, config)
         clip_paths.append(clip_path)
