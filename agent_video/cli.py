@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from .config import load_config
 from .image_builder import build_scene_clip
 from .manifest import build_manifest, print_manifest_report, write_manifest
-from .script_parser import ScriptParseError, parse_script
+from .script_parser import ScriptParseError, parse_script, slugify
 from .tts import ELEVENLABS_MODEL_ID, ELEVENLABS_SIMILARITY, ELEVENLABS_STABILITY, get_audio_duration, synthesize_scene
 from .tts_cache import LocalCacheStore, synthesize_with_cache, tts_cache_enabled
 from .video_builder import build_episode
@@ -25,14 +25,6 @@ tags:
 asset: hero_intro.png
 text: Viết câu thoại đầu tiên ở đây.
 """
-
-
-def slugify(title: str) -> str:
-    slug = title.strip().lower()
-    slug = re.sub(r"[^a-z0-9\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"-+", "-", slug).strip("-")
-    return slug
 
 
 def next_episode_number(videos_dir: str) -> int:

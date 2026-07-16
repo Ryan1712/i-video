@@ -127,3 +127,57 @@ def test_from_dict_validates():
     data["sections"][0]["scenes"] = []
     with pytest.raises(PlanValidationError, match="has no scenes"):
         ProductionPlan.from_dict(data)
+
+
+from agent_video.production_plan import plan_from_episode
+from agent_video.script_parser import Episode, Scene, ScriptSection
+
+
+def test_plan_from_sectionless_episode():
+    scenes = [Scene(name="scene_01", asset="a.png", text="hi")]
+    episode = Episode(
+        title="Test", description="d", tags=["x"], scenes=scenes,
+        sections=[ScriptSection(title="Test", scenes=scenes)],
+    )
+    plan = plan_from_episode(episode)
+    plan.validate()
+    assert plan.title == "Test"
+    assert [s.id for s in plan.sections] == ["test"]
+    assert plan.sections[0].mood is None
+    assert [s.name for s in plan.flatten_scenes()] == ["scene_01"]
+
+
+def test_plan_from_sectioned_episode_carries_metadata():
+    s1 = [Scene(name="scene_01", asset="a.png", text="one")]
+    s2 = [Scene(name="scene_02", asset="b.png", text="two")]
+    episode = Episode(
+        title="EP", description="", tags=[], scenes=s1 + s2,
+        sections=[
+            ScriptSection(title="The First Signs", mood="suspense", intensity=0.35,
+                          music="suspense-low", scenes=s1),
+            ScriptSection(title="The Collapse", mood="panic", scenes=s2),
+        ],
+    )
+    plan = plan_from_episode(episode)
+    plan.validate()
+    assert [s.id for s in plan.sections] == ["the-first-signs", "the-collapse"]
+    assert plan.sections[0].music_profile == "suspense-low"
+    assert plan.sections[0].intensity == 0.35
+    assert plan.sections[1].mood == "panic"
+
+
+def test_plan_from_episode_deduplicates_and_falls_back_ids():
+    s1 = [Scene(name="scene_01", asset="a.png", text="one")]
+    s2 = [Scene(name="scene_02", asset="b.png", text="two")]
+    s3 = [Scene(name="scene_03", asset="c.png", text="three")]
+    episode = Episode(
+        title="EP", description="", tags=[], scenes=s1 + s2 + s3,
+        sections=[
+            ScriptSection(title="!!!", scenes=s1),       # slug empty -> section-1
+            ScriptSection(title="Same", scenes=s2),
+            ScriptSection(title="Same", scenes=s3),      # duplicate -> same-2
+        ],
+    )
+    plan = plan_from_episode(episode)
+    plan.validate()
+    assert [s.id for s in plan.sections] == ["section-1", "same", "same-2"]

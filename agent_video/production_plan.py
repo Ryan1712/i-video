@@ -130,3 +130,43 @@ def write_plan(plan: ProductionPlan, path: str) -> None:
 def load_plan(path: str) -> ProductionPlan:
     with open(path, "r", encoding="utf-8") as f:
         return ProductionPlan.from_dict(json.load(f))
+
+
+def _section_ids(titles: list[str]) -> list[str]:
+    from .script_parser import slugify
+
+    ids: list[str] = []
+    for index, title in enumerate(titles):
+        base = slugify(title) or f"section-{index + 1}"
+        candidate = base
+        n = 2
+        while candidate in ids:
+            candidate = f"{base}-{n}"
+            n += 1
+        ids.append(candidate)
+    return ids
+
+
+def plan_from_episode(episode) -> ProductionPlan:
+    """Compile a parsed script.md Episode into a ProductionPlan."""
+    ids = _section_ids([section.title for section in episode.sections])
+    sections = [
+        PlanSection(
+            id=section_id,
+            title=section.title,
+            mood=section.mood,
+            intensity=section.intensity,
+            music_profile=section.music,
+            scenes=[
+                PlanScene(name=scene.name, text=scene.text, asset=scene.asset)
+                for scene in section.scenes
+            ],
+        )
+        for section_id, section in zip(ids, episode.sections)
+    ]
+    return ProductionPlan(
+        title=episode.title,
+        description=episode.description,
+        tags=list(episode.tags),
+        sections=sections,
+    )
