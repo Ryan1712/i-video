@@ -182,3 +182,11 @@ def test_slugify_moved_to_script_parser():
     from agent_video.script_parser import slugify
 
     assert slugify("The First Signs!") == "the-first-signs"
+
+
+def test_section_header_keyword_is_case_insensitive(tmp_path):
+    content = "title: T\n\n## section: Opening\nmood: dark\n\n## scene_01\nasset: a.png\ntext: hi\n"
+    episode = parse_script(_write(tmp_path, content))
+    assert [s.title for s in episode.sections] == ["Opening"]
+    assert episode.sections[0].mood == "dark"
+    assert episode.scenes[0].text == "hi"

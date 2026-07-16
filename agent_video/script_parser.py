@@ -36,7 +36,7 @@ class Episode:
 
 _SCENE_HEADER_RE = re.compile(r"^##\s+(\S+)\s*$")
 _FIELD_RE = re.compile(r"^([A-Za-z_]+):\s*(.*)$")
-_SECTION_HEADER_RE = re.compile(r"^##\s+SECTION:\s*(.+?)\s*$")
+_SECTION_HEADER_RE = re.compile(r"^##\s+SECTION:\s*(.+?)\s*$", re.IGNORECASE)
 _SECTION_META_KEYS = ("mood", "intensity", "music")
 
 
