@@ -115,7 +115,7 @@ def check_plan(plan: ProductionPlan) -> list[QualityFlag]: ...
 | `cliche_everything_about_to_change` | `everything (was\|is) about to change` | 2 | Generic dramatic setup |
 | `cliche_officially` | `officially (began\|started)` | 2 | Narrator declares a turning point instead of showing it |
 | `structural_not_x_not_y_but_z` | `not\s+\w[^.]*\.\s*not\s+\w[^.]*\.\s*but\b` | 2 | Repeated triplet-contrast sentence structure |
-| `structural_no_x_no_y` | `\bno\s+\w+\.\s+no\s+\w+\.` | 1 | Repeated sentence-fragment structure |
+| `structural_no_x_no_y` | `\bno\s+[^.!?]+[.!?]\s+no\s+[^.!?]+[.!?]` | 1 | Repeated sentence-fragment structure (multi-word "No X. No Y." pairs, e.g. "No further details. No explanation.") |
 | `long_sentence` | (not regex — split `scene.text` on `[.!?]`, flag any sentence > 28 words) | 1 | Hard to speak aloud / read as one breath |
 | `rhetorical_ending` | scene text ends with `?` | 1 | Rhetorical-question ending (fine occasionally, a tell in density) |
 | `repeated_intensifier` | (plan-wide, word-boundary match) any of `panic, chaos, suddenly, completely, nightmare, terrifying, desperate, truly` | 1 | Same intensifier reused across the episode instead of varying description — flags every scene from the word's 2nd occurrence onward (the 1st use is unflagged) |
