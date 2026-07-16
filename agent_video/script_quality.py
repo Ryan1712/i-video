@@ -17,6 +17,15 @@ class QualityFlag:
 
 
 @dataclass
+class SceneCritique:
+    scene_name: str
+    issue: str
+    reason: str
+    rewrite_suggestion: str
+    severity: int
+
+
+@dataclass
 class Rule:
     id: str
     pattern: re.Pattern
@@ -89,6 +98,35 @@ def _check_rhetorical_ending(scene_name: str, text: str) -> list[QualityFlag]:
     return []
 
 
+_INTENSIFIER_WORDS = [
+    "panic", "chaos", "suddenly", "completely", "nightmare",
+    "terrifying", "desperate", "truly",
+]
+
+
+def _check_repeated_intensifiers(plan: ProductionPlan) -> list[QualityFlag]:
+    flags: list[QualityFlag] = []
+    seen_words: set[str] = set()
+    for scene in plan.flatten_scenes():
+        for word in _INTENSIFIER_WORDS:
+            if re.search(rf"\b{re.escape(word)}\b", scene.text, re.IGNORECASE):
+                if word in seen_words:
+                    flags.append(
+                        QualityFlag(
+                            scene_name=scene.name,
+                            rule_id="repeated_intensifier",
+                            severity=1,
+                            matched_text=word,
+                            reason=(
+                                "Same intensifier reused across the episode instead of "
+                                "varying description"
+                            ),
+                        )
+                    )
+                seen_words.add(word)
+    return flags
+
+
 def check_plan(plan: ProductionPlan) -> list[QualityFlag]:
     flags: list[QualityFlag] = []
     for scene in plan.flatten_scenes():
@@ -106,4 +144,47 @@ def check_plan(plan: ProductionPlan) -> list[QualityFlag]:
                 )
         flags.extend(_check_long_sentences(scene.name, scene.text))
         flags.extend(_check_rhetorical_ending(scene.name, scene.text))
+    flags.extend(_check_repeated_intensifiers(plan))
     return flags
+
+
+def render_quality_report(
+    plan: ProductionPlan, flags: list[QualityFlag], critiques: list[SceneCritique]
+) -> str:
+    flags_by_scene: dict[str, list[QualityFlag]] = {}
+    for flag in flags:
+        flags_by_scene.setdefault(flag.scene_name, []).append(flag)
+    critiques_by_scene: dict[str, list[SceneCritique]] = {}
+    for critique in critiques:
+        critiques_by_scene.setdefault(critique.scene_name, []).append(critique)
+
+    all_scenes = plan.flatten_scenes()
+    flagged_names = set(flags_by_scene) | set(critiques_by_scene)
+    lines = [
+        f"# Script Quality Report — {plan.title}",
+        "",
+        f"Tổng số scene: {len(all_scenes)}",
+        f"Scene bị gắn cờ: {len(flagged_names)}",
+        "",
+    ]
+    for scene in all_scenes:
+        scene_flags = flags_by_scene.get(scene.name, [])
+        scene_critiques = critiques_by_scene.get(scene.name, [])
+        if not scene_flags and not scene_critiques:
+            continue
+        lines.append(f"## {scene.name}")
+        lines.append("")
+        lines.append(f"Narration: {scene.text}")
+        lines.append("")
+        for flag in scene_flags:
+            lines.append(
+                f"- Rule `{flag.rule_id}` (mức {flag.severity}): {flag.reason} "
+                f"— khớp: \"{flag.matched_text}\""
+            )
+        for critique in scene_critiques:
+            lines.append(f"- **Issue** (mức {critique.severity}): {critique.issue}")
+            lines.append(f"  - Lý do: {critique.reason}")
+            lines.append(f"  - Gợi ý viết lại: {critique.rewrite_suggestion}")
+            lines.append("  - [ ] Áp dụng gợi ý trên")
+        lines.append("")
+    return "\n".join(lines)

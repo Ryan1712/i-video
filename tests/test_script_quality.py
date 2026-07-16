@@ -1,6 +1,6 @@
 """Tests for the deterministic script-quality rule checker."""
 from agent_video.production_plan import PlanScene, PlanSection, ProductionPlan
-from agent_video.script_quality import QualityFlag, check_plan
+from agent_video.script_quality import QualityFlag, check_plan, SceneCritique, render_quality_report
 
 
 def _plan(*scene_texts: str) -> ProductionPlan:
@@ -109,3 +109,87 @@ def test_multiple_flags_on_same_scene():
     ids = _rule_ids(check_plan(plan), "scene_01")
     assert "cliche_little_did" in ids
     assert "cliche_question_no_longer" in ids
+
+
+INTENSIFIER_WORDS = [
+    "panic", "chaos", "suddenly", "completely", "nightmare", "terrifying", "desperate", "truly",
+]
+
+
+def test_repeated_intensifier_flags_from_second_occurrence():
+    plan = _plan(
+        "The panic was rising in the street.",
+        "Nothing about this felt normal.",
+        "Another wave of panic swept through the crowd.",
+    )
+    flags = check_plan(plan)
+    assert "repeated_intensifier" not in _rule_ids(flags, "scene_01")
+    assert "repeated_intensifier" in _rule_ids(flags, "scene_03")
+
+
+def test_repeated_intensifier_distinct_words_do_not_cross_flag():
+    plan = _plan("There was chaos everywhere.", "He felt truly alone.")
+    flags = check_plan(plan)
+    assert _rule_ids(flags, "scene_01") == set()
+    assert _rule_ids(flags, "scene_02") == set()
+
+
+def test_repeated_intensifier_word_boundary_no_false_positive():
+    # "panicked" contains "panic" as a substring, but \b must prevent a false match —
+    # otherwise two uses of "panicked" would wrongly trigger repetition on the standalone word.
+    plan = _plan("He panicked and ran down the hall.", "He panicked again near the door.")
+    flags = check_plan(plan)
+    assert _rule_ids(flags, "scene_01") == set()
+    assert _rule_ids(flags, "scene_02") == set()
+
+
+def test_render_report_omits_clean_scenes():
+    plan = _plan("He walked to the store.", "Little did he know what waited.")
+    flags = check_plan(plan)
+    report = render_quality_report(plan, flags, critiques=[])
+    assert "scene_01" not in report
+    assert "scene_02" in report
+
+
+def test_render_report_includes_summary_counts():
+    plan = _plan("He walked to the store.", "Little did he know what waited.")
+    flags = check_plan(plan)
+    report = render_quality_report(plan, flags, critiques=[])
+    assert "Tổng số scene: 2" in report
+    assert "Scene bị gắn cờ: 1" in report
+
+
+def test_render_report_includes_rule_flag_details():
+    plan = _plan("Little did he know what waited.")
+    flags = check_plan(plan)
+    report = render_quality_report(plan, flags, critiques=[])
+    assert "cliche_little_did" in report
+    assert "Cliché omniscient foreshadowing" in report
+    assert "Little did he know" in report
+
+
+def test_render_report_includes_critique_details():
+    plan = _plan("He walked to the store.")
+    critique = SceneCritique(
+        scene_name="scene_01",
+        issue="Flat delivery",
+        reason="No sensory detail",
+        rewrite_suggestion="He walked to the store, boots crunching over broken glass.",
+        severity=2,
+    )
+    report = render_quality_report(plan, flags=[], critiques=[critique])
+    assert "scene_01" in report
+    assert "Flat delivery" in report
+    assert "No sensory detail" in report
+    assert "boots crunching over broken glass" in report
+    assert "Áp dụng gợi ý" in report
+
+
+def test_render_report_scene_with_only_critique_not_omitted():
+    plan = _plan("He walked to the store.", "She waited by the door.")
+    critique = SceneCritique(
+        scene_name="scene_02", issue="x", reason="y", rewrite_suggestion="z", severity=1,
+    )
+    report = render_quality_report(plan, flags=[], critiques=[critique])
+    assert "scene_01" not in report
+    assert "scene_02" in report
