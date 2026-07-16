@@ -119,13 +119,18 @@ asset: empty_street.png
 text: At first, nobody would understand what was happening.
 ```
 
-- A line matching `^##\s+SECTION:\s*(.+)$` starts a new section. Metadata lines
+- A line matching `^##\s+SECTION:\s*(.+)$` (keyword case-insensitive, so `## section:`
+  also works — a mistyped keyword must never silently join the previous scene's text)
+  starts a new section. Metadata lines
   (`mood:`, `intensity:`, `music:`) may follow before the first scene of that section.
   Section id = slugified title.
 - Scene blocks (`## scene_xx`) are unchanged and belong to the most recent section.
-- A script with no SECTION headers (all existing scripts) compiles to a single section
-  `{id: "main", title: <episode title>}` with no mood/intensity/music — output identical
-  to today.
+- A script with no SECTION headers (all existing scripts) compiles to a single implicit
+  section titled with the episode title and no mood/intensity/music — rendering output
+  identical to today.
+- Section ids are derived, not authored: `slugify(section title)`, with fallback
+  `section-<n>` when the slug is empty (e.g. all-diacritics Vietnamese titles) and a
+  `-<n>` suffix appended on duplicate slugs. Deterministic, never a validation error.
 - Parse errors for: SECTION with no scenes, invalid `intensity` (non-float or out of
   range), unknown metadata keys are ignored (consistent with the parser's current
   tolerance of unknown frontmatter keys).
