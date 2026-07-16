@@ -50,6 +50,8 @@ def critique_script(plan: ProductionPlan, flags: list[QualityFlag], language: st
     if not isinstance(raw_critiques, list):
         raise AIError("Model reply missing 'critiques' list")
 
+    valid_names = {scene.name for scene in plan.flatten_scenes()}
+
     critiques: list[SceneCritique] = []
     for raw in raw_critiques:
         if not isinstance(raw, dict):
@@ -64,6 +66,8 @@ def critique_script(plan: ProductionPlan, flags: list[QualityFlag], language: st
             raise AIError(f"Critique entry missing required field: {exc}") from exc
         if not isinstance(scene_name, str) or not scene_name.strip():
             raise AIError("Critique entry has invalid scene_name")
+        if scene_name not in valid_names:
+            raise AIError(f"Critique entry references unknown scene_name: {scene_name!r}")
         if not isinstance(issue, str) or not isinstance(reason, str) or not isinstance(rewrite_suggestion, str):
             raise AIError("Critique entry has a non-string text field")
         if not isinstance(severity, int) or isinstance(severity, bool) or not 1 <= severity <= 3:

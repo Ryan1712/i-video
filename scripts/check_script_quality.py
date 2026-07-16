@@ -29,7 +29,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("episode_id", type=int)
     parser.add_argument("--output", default=None)
-    parser.add_argument("--language", default="en")
+    parser.add_argument("--language", default=None)
     args = parser.parse_args()
 
     output_path = args.output or f"script_quality_ep{args.episode_id}.md"
@@ -38,6 +38,10 @@ def main() -> None:
     db = session_factory()
     try:
         episode = db.query(Episode).filter_by(id=args.episode_id).one()
+        language = args.language
+        if language is None:
+            series_style = episode.series.style if episode.series else {}
+            language = series_style.get("language", "en")
         plan = build_plan_from_db_episode(episode)
         plan.validate()
     finally:
@@ -48,7 +52,7 @@ def main() -> None:
     print(f"Rule checker: {len(flags)} flag(s) across {len({f.scene_name for f in flags})} scene(s)")
 
     print("Running LLM critique pass (one call for the whole episode)...")
-    critiques = critique_script(plan, flags, language=args.language)
+    critiques = critique_script(plan, flags, language=language)
     print(f"LLM critic: {len(critiques)} scene(s) with issues")
 
     report = render_quality_report(plan, flags, critiques)

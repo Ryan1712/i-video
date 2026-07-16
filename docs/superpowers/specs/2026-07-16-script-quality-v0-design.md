@@ -73,7 +73,7 @@ needs today.
 class QualityFlag:
     scene_name: str
     rule_id: str
-    severity: int  # 1-3, informational only in v0 (report ordering, not gating)
+    severity: int  # 1-3, informational only in v0 (displayed per flag, not used for gating or ordering — the report follows plan/scene order)
     matched_text: str
     reason: str
 
@@ -166,8 +166,7 @@ critique (clean scenes omitted entirely — the point is to shrink the review su
 reproduce the full script). Each section: scene name, original text, rule flags (id +
 matched text), LLM issue + reason + rewrite suggestion, and a
 `- [ ] Áp dụng gợi ý trên` checkbox line — matching the checkbox-review pattern already
-familiar from `review_ep1_en_v3.md`. A summary line at the top: total scenes, scenes flagged,
-counts by severity.
+familiar from `review_ep1_en_v3.md`. A summary line at the top: total scenes, scenes flagged.
 
 ### `scripts/check_script_quality.py`
 

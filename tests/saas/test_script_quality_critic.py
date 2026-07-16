@@ -94,3 +94,31 @@ def test_critique_script_wrong_severity_type_raises():
     with patch("saas.ai.script_quality_critic.generate_json", return_value=response):
         with pytest.raises(AIError):
             critique_script(_plan(), _flags(), language="en")
+
+
+def test_critique_script_bool_severity_raises():
+    response = {
+        "critiques": [
+            {
+                "scene_name": "scene_02", "issue": "x", "reason": "y",
+                "rewrite_suggestion": "z", "severity": True,
+            }
+        ]
+    }
+    with patch("saas.ai.script_quality_critic.generate_json", return_value=response):
+        with pytest.raises(AIError):
+            critique_script(_plan(), _flags(), language="en")
+
+
+def test_critique_script_unknown_scene_name_raises():
+    response = {
+        "critiques": [
+            {
+                "scene_name": "scene_99", "issue": "x", "reason": "y",
+                "rewrite_suggestion": "z", "severity": 1,
+            }
+        ]
+    }
+    with patch("saas.ai.script_quality_critic.generate_json", return_value=response):
+        with pytest.raises(AIError, match="scene_99"):
+            critique_script(_plan(), _flags(), language="en")
