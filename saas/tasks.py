@@ -14,7 +14,6 @@ from sqlalchemy.orm import sessionmaker
 
 from agent_video.config import DEFAULT_CONFIG
 from agent_video.image_builder import build_scene_clip
-from agent_video.production_plan import PlanScene, PlanSection, ProductionPlan
 from agent_video.script_parser import Episode as EngineEpisode
 from agent_video.script_parser import Scene as EngineScene
 from agent_video.tts import get_audio_duration
@@ -25,6 +24,7 @@ from .celery_app import celery_app
 from .db import init_session_factory
 from .models import Episode, Job, YouTubeConnection
 from .object_storage import upload_bytes
+from .production_plan_builder import build_plan_from_db_episode
 from .storage import download_to_path, save_output
 from .tts_cache_store import ObjectStorageCacheStore
 from .tts_providers import get_tts_provider
@@ -52,7 +52,6 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
             os.makedirs(os.path.join(temp_dir, "output"))
 
             engine_scenes = []
-            plan_scenes = []
             for scene in episode.scenes:
                 scene_name = f"scene_{scene.order_index:02d}"
                 _, ext = os.path.splitext(scene.asset_object_key)
@@ -61,21 +60,13 @@ def run_build(job_id: int, session_factory: sessionmaker) -> None:
                 engine_scenes.append(
                     EngineScene(name=scene_name, asset=local_asset_path, text=scene.narration_text)
                 )
-                plan_scenes.append(
-                    PlanScene(name=scene_name, text=scene.narration_text, asset=scene.asset_object_key)
-                )
             engine_episode = EngineEpisode(
                 title=episode.title,
                 description=episode.description,
                 tags=[t.strip() for t in episode.tags.split(",") if t.strip()],
                 scenes=engine_scenes,
             )
-            plan = ProductionPlan(
-                title=engine_episode.title,
-                description=engine_episode.description,
-                tags=engine_episode.tags,
-                sections=[PlanSection(id="main", title=episode.title, scenes=plan_scenes)],
-            )
+            plan = build_plan_from_db_episode(episode)
             plan.validate()
             plan_key = f"episodes/{episode.id}/production_plan.json"
             try:
