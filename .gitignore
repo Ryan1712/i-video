@@ -4,7 +4,13 @@ videos/*/.yt_token.json
 videos/*/audio/
 videos/*/output/
 videos/*/manifest.json
+videos/*.mp4
+videos/*_compare/
+videos/*_compare_en/
 __pycache__/
 *.pyc
 .worktrees/
 .superpowers/
+.claude/
+docker-compose.override.yml
+frontend/test-results/
